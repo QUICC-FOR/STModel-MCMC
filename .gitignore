@@ -1,5 +1,9 @@
 # old source code that I am playing with but don't want committed
 old/*
+src/test
+
+# hdf5 data files
+*.h5
 
 # Compiled Object files
 *.slo
