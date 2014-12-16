@@ -6,6 +6,6 @@ CF=-std=c++11
 CO=$(CF) -fopenmp
 #CO=$(CF)
 
-#bin/sampler.o: src/sampler.cpp src/sampler.hpp
-#	mkdir -p bin
-#	$(CC) $(CO) -c -o bin/sampler.o src/sampler.cpp
+bin/likelihood.o: src/likelihood.cpp hdr/likelihood.hpp
+	mkdir -p bin
+	$(CC) $(CO) -c -o bin/likelihood.o src/likelihood.cpp
