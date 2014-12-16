@@ -30,6 +30,7 @@
 
 */
 
+#include <cmath>
 #include "../hdr/likelihood.hpp"
 #include "../hdr/parameters.hpp"
 
@@ -38,109 +39,75 @@ using std::vector;
 // total number of threads to be used if the program is built for multi-threaded use
 #define S_NUM_THREADS 11
 
+namespace Likelihood {
 
-
-namespace {
-/*
-	below are the raw expressions of the likelihood of each transition
-	for use in the model, they are abstracted away somewhat using the lhood map
-*/
-
-inline long double b_to_b(TransitionRates rates, Transition dat)
-{
-	return (1 - rates.epsilon() - b_to_m(rates, dat));
-}
-
-
-inline long double b_to_m(TransitionRates rates, Transition dat)
-{
-	return rates.beta('T') * (dat.expected['T'] + dat.expected['M']) * (1-rates.epsilon());
-}
-
-
-inline long double not_r_to_r(TransitionRates rates, Transition dat)
-{
-	return rates.epsilon();
-}
-
-
-inline long double r_to_not_r(TransitionRates rates, Transition dat)
-{
-	return rates.phi(dat.final);
-}
-
-
-inline long double r_to_r(TransitionRates rates, Transition dat)
-{
-	return 1 - rates.phi('B') - rates.phi('T') - rates.phi('M');
-}
-
-
-inline long double t_to_m(TransitionRates rates, Transition dat)
-{
-	return rates.beta('B') * (dat.expected['B']+dat.expected['M']) * (1 - rates.epsilon());
-}
-
-
-inline long double t_to_t(TransitionRates rates, Transition dat)
-{
-	return 1 - rates.epsilon() - t_to_m(rates, dat);
-}
-
-inline long double m_to_b(TransitionRates rates, Transition dat)
-{
-	return rates.theta() * (1 - rates.theta('T')) * (1 - rates.epsilon());
-}
-
-
-inline long double m_to_t(TransitionRates rates, Transition dat)
-{
-	return rates.theta() * rates.theta('T') * (1 - rates.epsilon());
-}
-
-
-inline long double m_to_m(TransitionRates rates, Transition dat)
-{
-	return rates.theta() * rates.theta('T') * (1 - rates.epsilon());
-}
-
-
-} // ! anonymous namespace
-
-
-
-STModel::Likelihood::Likelihood(vector<Transition> data)
-transitions(data)
+Likelihood::Likelihood(vector<Transition> data) :
+	transitions(data)
 {
 
-	// set up the map of functions to the likelihood expressions
-	lhood['B']['B'] = &b_to_b;
-	lhood['B']['M'] = &b_to_m;
-	lhood['B']['R'] = &not_r_to_r;
-	lhood['T']['T'] = &t_to_t;
-	lhood['T']['M'] = &t_to_m;
-	lhood['T']['R'] = &not_r_to_r;
-	lhood['M']['B'] = &m_to_b;
-	lhood['M']['T'] = &m_to_t;
-	lhood['M']['M'] = &m_to_m;
-	lhood['M']['R'] = &not_r_to_r;
-	lhood['R']['B'] = &r_to_not_r;
-	lhood['R']['T'] = &r_to_not_r;
-	lhood['R']['M'] = &r_to_not_r
-	lhood['R']['R'] = &r_to_r;
+	/* 
+		set up the map of functions to the likelihood expressions
+		this is the canonical definition of the 4-state model, so pay attention
+		
+		the lhood data structure is a map of maps of lambda functions
+		the first map is keyed by the initial state:
+			lhood[i] produces a reference to a map of functions defining
+			the transition rates possible for i, where i is a character giving the initial
+			state.
+		the second map is keyed by the final state:
+			lhood[i][f] yields a lambda function defining the transition rate from state
+			i to state f
+		
+		the lambda functions share a common signature
+			lhood[i][f](rates, data) returns a long double giving the probability of the
+			transition.
+				rates: an object of class Parameters::TransitionRates giving the values
+					specified in the model
+				data: a object of class Transition, giving the data for a single transition
+		
+		thus lhood[i][f](rates, dat) provides the likelihood of transitioning from i to f 
+			given the data (in dat) and the parameters (in rates)
+			
+		THE INTENDED USE
+		given a single Transition tr and a set of TransitionRates rates:
+			lhood[tr.initial][tr.final](rates, tr)
+	*/
+	lhood['B']['M'] = [](Parameters::TransitionRates r, Transition d)
+		{ return r.beta('T') * (d.expected['T'] + d.expected['M']) * (1-r.epsilon()); };
+
+	lhood['B']['B'] = [](Parameters::TransitionRates r, Transition d)
+		{ return (1 - r.epsilon() - (r.beta('T') * (d.expected['T'] + d.expected['M']) * 
+			(1-r.epsilon()))); };
+
+	lhood['T']['M'] = [](Parameters::TransitionRates r, Transition d)
+		{ return r.beta('B') * (d.expected['B']+d.expected['M']) * (1 - r.epsilon()); };
+	
+	lhood['T']['T'] = [](Parameters::TransitionRates r, Transition d)
+		{ return 1 - r.epsilon() - (r.beta('B') * (d.expected['B']+d.expected['M']) * (
+			1 - r.epsilon())); };
+	
+	lhood['M']['B'] = [](Parameters::TransitionRates r, Transition d)
+		{ return r.theta() * (1 - r.theta('T')) * (1 - r.epsilon()); };
+		
+	lhood['M']['T'] = [](Parameters::TransitionRates r, Transition d)
+		{ return r.theta() * r.theta('T') * (1 - r.epsilon()); };
+	
+	lhood['M']['M'] = [](Parameters::TransitionRates r, Transition d)
+		{ return r.theta() * r.theta('T') * (1 - r.epsilon()); };
+
+	lhood['M']['R'] = lhood['T']['R'] = lhood['B']['R'] =
+		[](Parameters::TransitionRates r, Transition d){ return r.epsilon(); };
+
+	lhood['R']['B'] = lhood['R']['T'] =	lhood['R']['M'] = 
+		[](Parameters::TransitionRates r, Transition d){ return r.phi(d.final); };
+
+	lhood['R']['R'] = [](Parameters::TransitionRates r, Transition d)
+		{ return 1 - r.phi('B') - r.phi('T') - r.phi('M'); };
 
 }
 
 
-
-
-
-
-
-
-
-
-long double STModel::Likelihood::compute_likelihood(Parameters params)
+long double Likelihood::compute_likelihood(Parameters::Parameters params)
 {
 	long double sumlogl = 0;
 
@@ -149,16 +116,26 @@ long double STModel::Likelihood::compute_likelihood(Parameters params)
 	#pragma omp for reduction(+:sumlogl)
 	for(int i = 0; i < transitions.size(); i++)
 	{
-		const Transition currentData = transitions.at(i);
-		sumlogl += logl(currentData, params);
+		const Transition dat = transitions.at(i);
+		long double lik;
+		Parameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2, dat.expected);
+		lik = lhood[dat.initial][dat.final](rates, dat);
+		
+		// likelihood might be zero or negative (due to subtracting probabilities)
+		if(lik <= 0) lik = std::nextafter(0,1);
+		
+		sumlogl += std::log(lik);
 	} // ! for i
 	} // !parallel for
-}
-
-
-
-inline long double STModel::Likelihood::logl(Transition dat, Parameters par)
-{
-	STModel::TransitionRates trans = par.generate_rates(dat.env1, dat.env2, dat.expected);
 	
+	return sublogl;
 }
+
+
+(int *) my_func(int a) {
+	return [a](){ return a*2; }
+
+}
+
+
+} //!namespace Likelihood

@@ -30,10 +30,14 @@
 #include <vector>
 #include <map>
 
-namespace STModel {
 
 // forward declarations
-class Parameters;
+namespace Parameters {
+	class Parameters;
+	class TransitionRates;
+}
+
+namespace Likelihood {
 
 typedef struct {
 	char initial, final;
@@ -42,21 +46,19 @@ typedef struct {
 	
 } Transition;
 
+
+// function pointer type for likelihood functions
+typedef long double (*LhoodFuncPtr)(Parameters::TransitionRates, Transition);
+
+
 class Likelihood {
   public:
   	Likelihood(std::vector<Transition> data);
+	long double compute_likelihood(Parameters::Parameters params);
 
   private:
-  	// methods
-	long double compute_likelihood(Parameters params)
-	long double logl(Transition dat, Parameters par)
-  
-  	// data
   	std::vector<Transition> transitions;
-	
-	// state variables
-	
-	// settings
+	std::map<char, std::map<char, LhoodFuncPtr> > lhood;
 };
 
 } // !STModel namespace
