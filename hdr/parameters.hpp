@@ -18,7 +18,8 @@ class TransitionRates
 class Parameters
 {
 	public:
-		TransitionRates generate_rates(double env1, double env2, std::map<char> expected);
+		TransitionRates generate_rates(double env1, double env2, 
+			std::map<char, double> expected);
 };
 
 } // !Parameters namespace
