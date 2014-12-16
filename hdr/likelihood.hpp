@@ -48,7 +48,7 @@ typedef struct {
 
 
 // function pointer type for likelihood functions
-typedef long double (*LhoodFuncPtr)(Parameters::TransitionRates, Transition);
+typedef long double (*LhoodFuncPtr)(Parameters::TransitionRates, std::map<char, double>);
 
 
 class Likelihood {

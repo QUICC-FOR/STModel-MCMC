@@ -59,50 +59,62 @@ Likelihood::Likelihood(vector<Transition> data) :
 			i to state f
 		
 		the lambda functions share a common signature
-			lhood[i][f](rates, data) returns a long double giving the probability of the
+			lhood[i][f](rates, expected) returns a long double giving the probability of the
 			transition.
 				rates: an object of class Parameters::TransitionRates giving the values
 					specified in the model
-				data: a object of class Transition, giving the data for a single transition
+				expected: a map keyed by characters (where the key is the state)
+					yields the expected prevalence of the state
 		
-		thus lhood[i][f](rates, dat) provides the likelihood of transitioning from i to f 
-			given the data (in dat) and the parameters (in rates)
+		thus lhood[i][f](rates, expected) provides the likelihood of transitioning from i to f 
+			given the data (in expected) and the parameters (in rates)
 			
 		THE INTENDED USE
 		given a single Transition tr and a set of TransitionRates rates:
 			lhood[tr.initial][tr.final](rates, tr)
 	*/
-	lhood['B']['M'] = [](Parameters::TransitionRates r, Transition d)
+	lhood['B']['M'] = [](Parameters::TransitionRates r, std::map<char, double> e)
 		{ return r.beta('T') * (d.expected['T'] + d.expected['M']) * (1-r.epsilon()); };
 
-	lhood['B']['B'] = [](Parameters::TransitionRates r, Transition d)
+	lhood['B']['B'] = [](Parameters::TransitionRates r, std::map<char, double> e)
 		{ return (1 - r.epsilon() - (r.beta('T') * (d.expected['T'] + d.expected['M']) * 
 			(1-r.epsilon()))); };
 
-	lhood['T']['M'] = [](Parameters::TransitionRates r, Transition d)
+	lhood['T']['M'] = [](Parameters::TransitionRates r, std::map<char, double> e)
 		{ return r.beta('B') * (d.expected['B']+d.expected['M']) * (1 - r.epsilon()); };
 	
-	lhood['T']['T'] = [](Parameters::TransitionRates r, Transition d)
+	lhood['T']['T'] = [](Parameters::TransitionRates r, std::map<char, double> e)
 		{ return 1 - r.epsilon() - (r.beta('B') * (d.expected['B']+d.expected['M']) * (
 			1 - r.epsilon())); };
 	
-	lhood['M']['B'] = [](Parameters::TransitionRates r, Transition d)
+	lhood['M']['B'] = [](Parameters::TransitionRates r, std::map<char, double> e)
 		{ return r.theta() * (1 - r.theta('T')) * (1 - r.epsilon()); };
 		
-	lhood['M']['T'] = [](Parameters::TransitionRates r, Transition d)
+	lhood['M']['T'] = [](Parameters::TransitionRates r, std::map<char, double> e)
 		{ return r.theta() * r.theta('T') * (1 - r.epsilon()); };
 	
-	lhood['M']['M'] = [](Parameters::TransitionRates r, Transition d)
+	lhood['M']['M'] = [](Parameters::TransitionRates r, std::map<char, double> e)
 		{ return r.theta() * r.theta('T') * (1 - r.epsilon()); };
 
 	lhood['M']['R'] = lhood['T']['R'] = lhood['B']['R'] =
-		[](Parameters::TransitionRates r, Transition d){ return r.epsilon(); };
+		[](Parameters::TransitionRates r, std::map<char, double> e)
+		{ return r.epsilon(); };
 
-	lhood['R']['B'] = lhood['R']['T'] =	lhood['R']['M'] = 
-		[](Parameters::TransitionRates r, Transition d){ return r.phi(d.final); };
+	lhood['R']['B'] = [](Parameters::TransitionRates r, std::map<char, double> e)
+		{ return r.alpha('B') * (e['M'] + e['B']) * (1 - r.alpha['T']*(e['T']+e['M'])); };	// phi_b
+	
+	lhood['R']['T'] = [](Parameters::TransitionRates r, std::map<char, double> e)
+		{ return r.alpha('T') * (e['M'] + e['T']) * (1 - r.alpha['B']*(e['B']+e['M'])); };	// phi_t
+	
+	lhood['R']['M'] = [](Parameters::TransitionRates r, std::map<char, double> e)
+		{ return r.alpha('B') * (e['M'] + e['B']) * (r.alpha['T'] * (e['M'] + e['T'])); };	// phi_m
 
-	lhood['R']['R'] = [](Parameters::TransitionRates r, Transition d)
-		{ return 1 - r.phi('B') - r.phi('T') - r.phi('M'); };
+	lhood['R']['R'] = [](Parameters::TransitionRates r, std::map<char, double> e)
+		{ return 1 - 
+			(r.alpha('B') * (e['M'] + e['B']) * (1 - r.alpha['T']*(e['T']+e['M']))) - 	// phi_b
+			(r.alpha('T') * (e['M'] + e['T']) * (1 - r.alpha['B']*(e['B']+e['M']))) - 	// phi_t
+			(r.alpha('B') * (e['M'] + e['B']) * (r.alpha['T'] * (e['M'] + e['T'])));	// phi_m
+		};
 
 }
 
@@ -118,8 +130,8 @@ long double Likelihood::compute_likelihood(Parameters::Parameters params)
 	{
 		const Transition dat = transitions.at(i);
 		long double lik;
-		Parameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2, dat.expected);
-		lik = lhood[dat.initial][dat.final](rates, dat);
+		Parameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2);
+		lik = lhood[dat.initial][dat.final](rates, dat.expected);
 		
 		// likelihood might be zero or negative (due to subtracting probabilities)
 		if(lik <= 0) lik = std::nextafter(0,1);
