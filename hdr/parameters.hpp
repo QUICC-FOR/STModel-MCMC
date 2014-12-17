@@ -2,7 +2,9 @@
 #define ST_PARAMS_H
 
 #include <map>
+#include <vector>
 #include <exception>
+#include <string>
 
 namespace Parameters {
 
@@ -12,38 +14,56 @@ class parameter_error: public std::runtime_error
 		parameter_error() : runtime_error("Unknown state passed to Parameters object") {};
 };
 
+
+struct TransitionRates
+{
+	std::map<char, double> alpha, beta, theta;
+	double epsilon;
+
+	TransitionRates(std::map<char, double> al, std::map<char, double> be, 
+	  std::map<char, double> th, double ep) : alpha(al), beta(be), theta(th), epsilon(ep)
+	  {}
+};
+
 /*
-	NOTES TO SELF
-	it makes sense to have TransitionRates be a simpler object, as these things
-	are going to be accessed a lot; makes no sense to call the functions more than once
-	so have Parameters do all of the make_annual bullshit, etc
-	TransitionRates is just a struct with 3 maps (alpha, beta, theta) and a long double
-	(epsilon)
+	Decide when I make the engine
+	But it probably makes more sense to have the STModelParameters object contain the 
+	entire history (i.e., a vector of vectors), rather than constructing a new STModelParameters
+	object for each iteration of the MCMC
+	
+	would then have to add push_back(), last(), and flush() methods
+
 */
 
-class TransitionRates
+class STModelParameters
 {
 	public:
-		long double theta(const char state = 0) const;
-		long double beta(const char state) const;
-		long double alpha(const char state) const;
-		long double epsilon() const;
-		
-		TransitionRates(int intervalTime, std::map<char, long double> al, 
-		std::map<char, long double> be, std::map<char, long double> th, long double ep);
+		STModelParameters(std::vector<double> data);
+		/* 
+			uses environmental conditions (passed as parameters) along with the model
+			parameters (stored internally) to generate the transition rates
+		*/
+		TransitionRates generate_rates(double env1, double env2, int interval,
+		  double borealExpected);
+		/*
+			size() and at() are functions to provide a vector-like interface for this
+			class. This allows for easy iteration for MCMC
+			names() provides a vector of the parameter names
+		*/
+		size_t size() const;
+		double & at(int i);
+		const std::vector<std::string> & names() const;
 		
 	private:
-		long double make_annual(const long double logit_val) const;
-		int interval;
-		std::map<char, long double> alpha_logit, beta_logit, theta_logit;
-		long double epsilon_logit;
+		std::map<char, double> make_annual(const std::map<char, double> val, int interval) const;
+		long double make_annual(const long double logit_val, int interval) const;
+		std::vector<double> get_par(std::string parname, char state = '\0');
+		
+		std::vector<double> parameters;
+		std::vector<std::string> parameterNames;
+		
 };
 
-class Parameters
-{
-	public:
-		TransitionRates generate_rates(double env1, double env2, int interval);
-};
 
 } // !Parameters namespace
 
