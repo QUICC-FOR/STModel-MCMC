@@ -9,3 +9,8 @@ CO=$(CF) -fopenmp
 bin/parameters.o: src/parameters.cpp hdr/parameters.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/parameters.o src/parameters.cpp
+
+bin/likelihood.o: src/likelihood.cpp hdr/likelihood.hpp
+	mkdir -p bin
+	$(CC) $(CO) -c -o bin/likelihood.o src/likelihood.cpp
+
