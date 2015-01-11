@@ -18,3 +18,18 @@ bin/likelihood.o: src/likelihood.cpp hdr/likelihood.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/likelihood.o src/likelihood.cpp
 
+bin/output.o: src/output.cpp hdr/output.hpp
+	mkdir -p bin
+	$(CC) $(CO) -c -o bin/output.o src/output.cpp
+
+
+
+
+# TESTS
+
+test: test/bin/output_test
+	./test/bin/output_test
+
+test/bin/output_test: test/output_test.cpp src/output.cpp hdr/output.hpp
+	mkdir -p test/bin
+	$(CC) $(CO) -o test/bin/output_test test/output_test.cpp
