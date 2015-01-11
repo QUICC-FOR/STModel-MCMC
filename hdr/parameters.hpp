@@ -1,12 +1,12 @@
-#ifndef ST_PARAMS_H
-#define ST_PARAMS_H
+#ifndef STM_PARAMS_H
+#define STM_PARAMS_H
 
 #include <map>
 #include <vector>
 #include <exception>
 #include <string>
 
-namespace Parameters {
+namespace STMParameters {
 
 class parameter_error: public std::runtime_error
 {
@@ -19,21 +19,12 @@ struct TransitionRates
 {
 	std::map<char, double> alpha, beta, theta;
 	double epsilon;
-
+*
 	TransitionRates(std::map<char, double> al, std::map<char, double> be, 
 	  std::map<char, double> th, double ep) : alpha(al), beta(be), theta(th), epsilon(ep)
 	  {}
 };
 
-/*
-	Decide when I make the engine
-	But it probably makes more sense to have the STModelParameters object contain the 
-	entire history (i.e., a vector of vectors), rather than constructing a new STModelParameters
-	object for each iteration of the MCMC
-	
-	would then have to add push_back(), last(), and flush() methods
-
-*/
 
 class STModelParameters
 {
@@ -54,9 +45,15 @@ class STModelParameters
 		double & at(int i);
 		const std::vector<std::string> & names() const;
 		
+		/*
+			reports on whether the current parameters reflect sampling that has been
+			or not (and thus represents a markov chain).
+		*/
+		bool adapted(); 
+		
 	private:
 		std::map<char, double> make_annual(const std::map<char, double> val, int interval) const;
-		long double make_annual(const long double logit_val, int interval) const;
+		double make_annual(const double logit_val, int interval) const;
 		std::vector<double> get_par(std::string parname, char state = '\0');
 		
 		std::vector<double> parameters;
@@ -65,7 +62,7 @@ class STModelParameters
 };
 
 
-} // !Parameters namespace
+} // !STMParameters namespace
 
 
 #endif

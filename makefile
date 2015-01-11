@@ -6,6 +6,10 @@ CF=-std=c++11
 CO=$(CF) -fopenmp
 #CO=$(CF)
 
+bin/engine.o: src/engine.cpp hdr/engine.hpp hdr/parameters.hpp hdr/likelihood.hpp
+	mkdir -p bin
+	$(CC) $(CO) -c -o bin/engine.o src/engine.cpp
+
 bin/parameters.o: src/parameters.cpp hdr/parameters.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/parameters.o src/parameters.cpp

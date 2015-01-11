@@ -23,7 +23,7 @@ STModel-MCMC : parameters.cpp
 #include <cmath>
 #include "../hdr/parameters.hpp"
 
-namespace Parameters
+namespace STMParameters
 {
 
 TransitionRates STModelParameters::generate_rates(double env1, double env2, int interval,
@@ -82,11 +82,11 @@ std::map<char, double> STModelParameters::make_annual(const std::map<char, doubl
 	return result;
 }
 
-long double STModelParameters::make_annual(const long double logit_val, int interval) const
+double STModelParameters::make_annual(const double logit_val, int interval) const
 {
 	// compute the transition rate on the native interval
 	// uses the inverse logit, corrected to avoid overflow
-	long double val;
+	double val;
 	if(logit_val > 0)
 		val = 1.0 / (1.0 + std::exp(-logit_val));
 	else

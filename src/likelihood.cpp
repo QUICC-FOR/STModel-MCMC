@@ -39,7 +39,7 @@ using std::vector;
 // total number of threads to be used if the program is built for multi-threaded use
 #define S_NUM_THREADS 11
 
-namespace Likelihood {
+namespace STMLikelihood {
 
 Likelihood::Likelihood(vector<Transition> data) :
 	transitions(data)
@@ -59,9 +59,9 @@ Likelihood::Likelihood(vector<Transition> data) :
 			i to state f
 		
 		the lambda functions share a common signature
-			lhood[i][f](rates, expected) returns a long double giving the probability of the
+			lhood[i][f](rates, expected) returns a double giving the probability of the
 			transition.
-				rates: an object of class Parameters::TransitionRates giving the values
+				rates: an object of class STMParameters::TransitionRates giving the values
 					specified in the model
 				expected: a map keyed by characters (where the key is the state)
 					yields the expected prevalence of the state
@@ -70,67 +70,67 @@ Likelihood::Likelihood(vector<Transition> data) :
 			given the data (in expected) and the parameters (in rates)
 			
 		THE INTENDED USE
-		given a single Transition tr and a set of TransitionRates rates:
-			lhood[tr.initial][tr.final](rates, tr)
+		given expected frequencies and a set of TransitionRates rates:
+			lhood[tr.initial][tr.final](rates, expected)
 	*/
-	lhood['B']['M'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.beta('T') * (d.expected['T'] + d.expected['M']) * (1-r.epsilon()); };
+	lhood['B']['M'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.beta['T'] * (e['T'] + e['M']) * (1-r.epsilon); };
 
-	lhood['B']['B'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return (1 - r.epsilon() - (r.beta('T') * (d.expected['T'] + d.expected['M']) * 
-			(1-r.epsilon()))); };
+	lhood['B']['B'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return (1 - r.epsilon - (r.beta['T'] * (e['T'] + e['M']) * 
+			(1-r.epsilon))); };
 
-	lhood['T']['M'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.beta('B') * (d.expected['B']+d.expected['M']) * (1 - r.epsilon()); };
+	lhood['T']['M'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.beta['B'] * (e['B']+e['M']) * (1 - r.epsilon); };
 	
-	lhood['T']['T'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return 1 - r.epsilon() - (r.beta('B') * (d.expected['B']+d.expected['M']) * (
-			1 - r.epsilon())); };
-	
-	lhood['M']['B'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.theta() * (1 - r.theta('T')) * (1 - r.epsilon()); };
+	lhood['T']['T'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return 1 - r.epsilon - (r.beta['B'] * (e['B']+e['M']) * (
+			1 - r.epsilon)); };
+
+	lhood['M']['B'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.theta['\0'] * (1 - r.theta['T']) * (1 - r.epsilon); };
 		
-	lhood['M']['T'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.theta() * r.theta('T') * (1 - r.epsilon()); };
+	lhood['M']['T'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.theta['\0'] * r.theta['T'] * (1 - r.epsilon); };
 	
-	lhood['M']['M'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.theta() * r.theta('T') * (1 - r.epsilon()); };
+	lhood['M']['M'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.theta['\0'] * r.theta['T'] * (1 - r.epsilon); };
 
 	lhood['M']['R'] = lhood['T']['R'] = lhood['B']['R'] =
-		[](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.epsilon(); };
+		[](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.epsilon; };
 
-	lhood['R']['B'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.alpha('B') * (e['M'] + e['B']) * (1 - r.alpha['T']*(e['T']+e['M'])); };	// phi_b
+	lhood['R']['B'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.alpha['B'] * (e['M'] + e['B']) * (1 - r.alpha['T']*(e['T']+e['M'])); };	// phi_b	
 	
-	lhood['R']['T'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.alpha('T') * (e['M'] + e['T']) * (1 - r.alpha['B']*(e['B']+e['M'])); };	// phi_t
+	lhood['R']['T'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.alpha['T'] * (e['M'] + e['T']) * (1 - r.alpha['B']*(e['B']+e['M'])); };	// phi_t
 	
-	lhood['R']['M'] = [](Parameters::TransitionRates r, std::map<char, double> e)
-		{ return r.alpha('B') * (e['M'] + e['B']) * (r.alpha['T'] * (e['M'] + e['T'])); };	// phi_m
+	lhood['R']['M'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
+		{ return r.alpha['B'] * (e['M'] + e['B']) * (r.alpha['T'] * (e['M'] + e['T'])); };	// phi_m
 
-	lhood['R']['R'] = [](Parameters::TransitionRates r, std::map<char, double> e)
+	lhood['R']['R'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
 		{ return 1 - 
-			(r.alpha('B') * (e['M'] + e['B']) * (1 - r.alpha['T']*(e['T']+e['M']))) - 	// phi_b
-			(r.alpha('T') * (e['M'] + e['T']) * (1 - r.alpha['B']*(e['B']+e['M']))) - 	// phi_t
-			(r.alpha('B') * (e['M'] + e['B']) * (r.alpha['T'] * (e['M'] + e['T'])));	// phi_m
+			(r.alpha['B'] * (e['M'] + e['B']) * (1 - r.alpha['T']*(e['T']+e['M']))) - 	// phi_b
+			(r.alpha['T'] * (e['M'] + e['T']) * (1 - r.alpha['B']*(e['B']+e['M']))) - 	// phi_t
+			(r.alpha['B'] * (e['M'] + e['B']) * (r.alpha['T'] * (e['M'] + e['T'])));	// phi_m
 		};
 
 }
 
 
-long double Likelihood::compute_likelihood(Parameters::Parameters params)
+double Likelihood::compute_likelihood(STMParameters::STModelParameters params)
 {
-	long double sumlogl = 0;
+	double sumlogl = 0;
 
 	#pragma omp parallel num_threads(S_NUM_THREADS)
 	{
 	#pragma omp for reduction(+:sumlogl)
 	for(int i = 0; i < transitions.size(); i++)
 	{
-		const Transition dat = transitions.at(i);
-		long double lik;
-		Parameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2);
+		Transition dat = transitions.at(i);
+		double lik;
+		STMParameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2, dat.interval, dat.expected['B']);
 		lik = lhood[dat.initial][dat.final](rates, dat.expected);
 		
 		// likelihood might be zero or negative (due to subtracting probabilities)
@@ -140,13 +140,7 @@ long double Likelihood::compute_likelihood(Parameters::Parameters params)
 	} // ! for i
 	} // !parallel for
 	
-	return sublogl;
-}
-
-
-(int *) my_func(int a) {
-	return [a](){ return a*2; }
-
+	return sumlogl;
 }
 
 

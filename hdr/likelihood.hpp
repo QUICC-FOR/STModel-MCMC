@@ -1,5 +1,5 @@
-#ifndef LIKELIHOOD_H
-#define LIKELIHOOD_H
+#ifndef STM_LIKELIHOOD_H
+#define STM_LIKELIHOOD_H
 
 /*
 	QUICC-FOR ST-Model MCMC 
@@ -32,35 +32,35 @@
 
 
 // forward declarations
-namespace Parameters {
-	class Parameters;
-	class TransitionRates;
+namespace STMParameters {
+	class STModelParameters;
+	struct TransitionRates;
 }
 
-namespace Likelihood {
+namespace STMLikelihood {
 
-typedef struct {
+struct Transition {
 	char initial, final;
 	double env1, env2;
 	std::map<char, double> expected;
-	
-} Transition;
+	int interval;
+};
 
 
 // function pointer type for likelihood functions
-typedef long double (*LhoodFuncPtr)(Parameters::TransitionRates, std::map<char, double>);
+typedef double (*LhoodFuncPtr)(STMParameters::TransitionRates, std::map<char, double>);
 
 
 class Likelihood {
   public:
   	Likelihood(std::vector<Transition> data);
-	long double compute_likelihood(Parameters::Parameters params);
+	double compute_likelihood(STMParameters::STModelParameters params);
 
   private:
   	std::vector<Transition> transitions;
 	std::map<char, std::map<char, LhoodFuncPtr> > lhood;
 };
 
-} // !STModel namespace
+} // !STMLikelihood namespace
 
 #endif
