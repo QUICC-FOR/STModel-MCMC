@@ -52,13 +52,21 @@ typedef double (*LhoodFuncPtr)(STMParameters::TransitionRates, std::map<char, do
 
 
 class Likelihood {
-  public:
+	public:
   	Likelihood(std::vector<Transition> data);
-	double compute_likelihood(STMParameters::STModelParameters params);
+	double compute_log_likelihood(STMParameters::STModelParameters params);
+	double log_prior(int i, double val);
 
-  private:
-  	std::vector<Transition> transitions;
+	private:
+	struct PriorDist {
+  		double mean;
+  		double sd;
+	};
+  
+	// check to make sure these variables are properly initialized
+	std::vector<Transition> transitions;
 	std::map<char, std::map<char, LhoodFuncPtr> > lhood;
+	std::vector<PriorDist> priors;
 };
 
 } // !STMLikelihood namespace

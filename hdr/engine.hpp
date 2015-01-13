@@ -14,13 +14,17 @@ namespace STMOutput {
 	class OutputQueue;
 }
 
+namespace STMLikelihood {
+	class Likelihood;
+}
+
 
 namespace STMEngine {
 
 class Metropolis
 {
 	public:
-	Metropolis();	
+	Metropolis();	// runs the sampler automagically	
 	~Metropolis();
 	void run_sampler(int n);
 
@@ -34,16 +38,19 @@ class Metropolis
 	void set_up_rng();
 	
 	// pointers to objects that the engine doesn't own, but that it uses
-	STMParameters::STModelParameters * parameterHistory;
+	STMParameters::STModelParameters * parameters;
 	STMOutput::OutputQueue * outputQueue;
+	STMLikelihood::Likelihood * likelihood;
 
 	// objects that the engine owns
-	std::vector<double> currentSamples;
+	std::vector<std::vector<double> > currentSamples;
 	static gsl_rng * rng;
 	static int rngReferenceCount;
 
 	// settings
 	int outputBufferSize;
+	int adaptationSampleSize;
+	double adaptationRate;
 };
 
 } // namespace

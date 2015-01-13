@@ -1,10 +1,13 @@
 #include "../hdr/engine.hpp"
 #include "../hdr/parameters.hpp"
 #include "../hdr/output.hpp"
+#include "../hdr/likelihood.hpp"
 #include <ctime>
 #include <cassert>
 #include <string>
 #include <cmath>
+
+using std::vector;
 
 namespace STMEngine {
 
@@ -17,7 +20,8 @@ int Metropolis::rngReferenceCount = 0;
 */
 
 Metropolis::Metropolis() :
-outputBufferSize(50000)
+// the parameters below have default values with no support for changing them
+outputBufferSize(50000), adaptationSampleSize(10000), adaptationRate(1.1)
 {
 	set_up_rng();
 }
@@ -33,7 +37,7 @@ Metropolis::~Metropolis()
 
 void Metropolis::run_sampler(int n)
 {
-	while(!parameterHistory->adapted())
+	if(!parameters->adapted())
 		auto_adapt();
 
 	int numCompleted = 0;
@@ -41,8 +45,9 @@ void Metropolis::run_sampler(int n)
 		int sampleSize = ((n - numCompleted < outputBufferSize) ? (n - numCompleted) : outputBufferSize);
 		currentSamples.reserve(sampleSize);
 		do_sample(sampleSize);
-		outputQueue->push(currentSamples);	// note that this may block if the queue is busy
+		STMOutput::OutputBuffer buffer (currentSamples, STMOutput::OutputKeyType::POSTERIOR);
 		currentSamples.clear();
+		outputQueue->push(buffer);	// note that this may block if the queue is busy
 		numCompleted += sampleSize;
 		
 		/* if desired: some output with the current time 
@@ -63,29 +68,20 @@ void Metropolis::run_sampler(int n)
 
 void Metropolis::auto_adapt()
 {
-	// probably the best way to adapt the samplers is to truly discard these things
-	// just clear the samples when done, save the tuning parameters, and reset the state
-	// of the parameters object to the initial state
-	while(!parameters ->adapted()) {
-		vector<double> acceptanceRates = do_sample(adaptationSampleSize);
-		bool adapted = true;
-		for(int i = 0; i < acceptanceRates.size(); i++) {
-			// if the acceptance rate is way off, we double the adaptation rate
-			if(acceptanceRates[i] < targetAcceptanceInterval[0]/2.0) {
-				parameters->set_tuning(i, parameters->tuning(i) / 2.0*adaptationRate);
-				adapted = false;
-			} else if(acceptanceRates[i] < targetAcceptanceInterval[0]) {
-				parameters->set_tuning(i, parameters->tuning(i) / adaptationRate);
-				adapted = false;
-			} else if(acceptanceRates[i] > targetAcceptanceInterval[1]*2.0) {
-				parameters->set_tuning(i, parameters->tuning(i) * 2.0*adaptationRate);
-				adapted = false;
-			} else if(acceptanceRates[i] > targetAcceptanceInterval[1]) {
-				parameters->set_tuning(i, parameters->tuning(i) * adaptationRate);
-				adapted = false;
+	while(!parameters->adapted()) {
+		parameters->set_acceptance_rates(do_sample(adaptationSampleSize));
+		for(int i = 0; i < parameters->size(); i++) {
+			switch(parameters->not_adapted(i)) {
+				case -1 :
+					parameters->set_sampler_variance(i, parameters->sampler_variance(i) / adaptationRate);
+					break;
+				case 1 :
+					parameters->set_sampler_variance(i, parameters->sampler_variance(i) * adaptationRate);
+					break;
+				default:
+					break;
 			}
 		}
-		if(adapted) parameters->adapted() = true;
 	}
 	parameters->reset();
 }
@@ -93,8 +89,9 @@ void Metropolis::auto_adapt()
 
 vector<double> Metropolis::do_sample(int n)
 // n is the number of samples to take
+// returns a vector of acceptance rates
 {
-	int numParams = parameters->num_params();
+	int numParams = parameters->size();
 	vector<int> numAccepted (numParams, 0);
 	vector<double> acceptanceRates (numParams, 0);
 	
@@ -103,7 +100,7 @@ vector<double> Metropolis::do_sample(int n)
 	for(int i = 0; i < numParams; i++) indices[i] = i;
 
 	for(int i = 0; i < n; i++) {
-		gsl_ran_shuffle(rng, indices, nParams, sizeof(int));
+		gsl_ran_shuffle(rng, indices, numParams, sizeof(int));
 		for(int j = 0; j < numParams; j++) {
 			int index = indices[j];
 			double proposedVal = propose_parameter(index);
@@ -128,7 +125,8 @@ vector<double> Metropolis::do_sample(int n)
 
 double Metropolis::propose_parameter(int index)
 {
-	return parameters->current_state()[index] + gsl_ran_gaussian(rng, parameters->tuning()[i]);
+	return parameters->current_state()[index] + gsl_ran_gaussian(rng, 
+			parameters->sampler_variance(index));
 }
 
 
@@ -149,9 +147,10 @@ int Metropolis::select_parameter(double p, int index)
 }
 
 
-double Metropolis::log_posterior_prob(vector<double> params, int index);
+double Metropolis::log_posterior_prob(vector<double> params, int index)
 {
-	return likelihood->compute_log_likelihood(params) + likelihood->log_prior(params[index], index);
+	return likelihood->compute_log_likelihood(params) + 
+			likelihood->log_prior(index, params[index]);
 }
 
 

@@ -1,5 +1,8 @@
 #include "../hdr/output.hpp"
 #include <iostream>
+#include <stdexcept>
+#include <chrono>
+#include <thread>
 
 using std::vector;
 
@@ -46,4 +49,52 @@ void OutputBuffer::save()
 	dataWritten = true;
 }
 
+
+// public members of Output Queue
+OutputBuffer OutputQueue::pop()
+{
+	if(empty())
+		throw std::runtime_error("OutputQueue::pop: tried to pop from an empty queue");
+	queueMutex.lock();
+	OutputBuffer returnVal = data.front();
+	data.pop_front();
+	queueMutex.unlock();
+	return returnVal;
 }
+
+
+void OutputQueue::push(const OutputBuffer & dat)
+{
+	queueMutex.lock();
+	data.push_back(dat);
+	queueMutex.unlock();
+}
+
+
+bool OutputQueue::empty() const
+{ return data.empty(); }
+
+
+OutputQueue::OutputQueue()
+{ }
+
+
+
+OutputWorkerThread::OutputWorkerThread(OutputQueue * queue, bool * const terminateSignal, 
+		int pollFreqMilliseconds)
+{
+	std::chrono::milliseconds sleepTime (pollFreqMilliseconds);
+	bool terminate = false;
+	while(queue != NULL && terminateSignal != NULL && !terminate) {
+		terminate = *terminateSignal;
+		while(!queue->empty()) {
+			OutputBuffer buff = queue->pop();
+			buff.save();
+		}		
+		if(!terminate)
+			std::this_thread::sleep_for(sleepTime);		
+	}
+}
+
+
+} // STMOutput

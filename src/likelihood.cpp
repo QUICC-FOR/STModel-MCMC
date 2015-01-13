@@ -31,6 +31,7 @@
 */
 
 #include <cmath>
+#include <gsl/gsl_randist.h>
 #include "../hdr/likelihood.hpp"
 #include "../hdr/parameters.hpp"
 
@@ -119,7 +120,7 @@ Likelihood::Likelihood(vector<Transition> data) :
 }
 
 
-double Likelihood::compute_likelihood(STMParameters::STModelParameters params)
+double Likelihood::compute_log_likelihood(STMParameters::STModelParameters params)
 {
 	double sumlogl = 0;
 
@@ -130,7 +131,8 @@ double Likelihood::compute_likelihood(STMParameters::STModelParameters params)
 	{
 		Transition dat = transitions.at(i);
 		double lik;
-		STMParameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2, dat.interval, dat.expected['B']);
+		STMParameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2, 
+				dat.interval, dat.expected['B']);
 		lik = lhood[dat.initial][dat.final](rates, dat.expected);
 		
 		// likelihood might be zero or negative (due to subtracting probabilities)
@@ -144,4 +146,9 @@ double Likelihood::compute_likelihood(STMParameters::STModelParameters params)
 }
 
 
+
+double Likelihood::log_prior(int i, double val)
+{
+	return std::log(gsl_ran_gaussian_pdf(val - priors.at(i).mean, priors.at(i).sd));
+}
 } //!namespace Likelihood

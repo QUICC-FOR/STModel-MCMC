@@ -29,6 +29,8 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <mutex>
+#include <deque>
 
 
 namespace STMOutput {
@@ -39,37 +41,14 @@ enum class OutputKeyType {
 	TUNING		// tuning parameters
 };
 
+
 enum class OutputMethodType {
 	CSV,		// writes to csv files (comma separated, with a header) (not implemented)
 	HDF5,		// uses the HDF5 library and writes all objects to a single file (not implemented)
 	STDOUT		// dumps raw data to stdout
 };
-/*
-
-class OutputWorker
-{
-	public:
-	OutputWorker(OutputQueue * outQueue);
-	
-	private:
-	OutputQueue * queue;
-};
 
 
-class OutputQueue
-{
-	// implements a FIFO queue with thread safety
-	public:
-	OutputBuffer pop();
-	void push(OutputBuffer & dat);
-
-	private:
-	lock();
-	release();
-	std::mutex queueMutex;
-	std::deque<double> data;
-}
-*/
 
 class OutputOptions
 {
@@ -90,8 +69,9 @@ class OutputBuffer: protected OutputOptions
 /*
 	Implementation note:
 	Inheritance is from OutputOptions so that all of the options can be saved internally,
-	just by invoking the base class copy constructor when initializing the OutputBuffer object
-	inheritance is protected so that the OutputHelper constructor is not available publicly
+	just by invoking the base class copy constructor when initializing the OutputBuffer
+	object. Inheritance is protected so that the OutputHelper constructor is not available
+	publicly
 */
 	public:
 	/*
@@ -122,6 +102,51 @@ class OutputBuffer: protected OutputOptions
 	template<typename T> 
 	std::string vec_to_str(std::vector<T> inDat, char delim = ',');
 
+};
+
+
+class OutputQueue
+{
+	// implements a FIFO queue with thread safety
+	public:
+	OutputBuffer pop();
+	void push(const OutputBuffer & dat);
+	bool empty() const;
+	OutputQueue();
+
+	private:
+	std::mutex queueMutex;
+	std::deque<OutputBuffer> data;
+};
+
+
+class OutputWorkerThread
+/*
+	OutputWorkerThread is designed to be launched in a thread that will work in the
+	background. On construction, it is passed a pointer to a Queue (that it doesn't own).
+	The OutputWorkerThread will periodically poll the queue (at an interval given by
+	the pollFreqMilliseconds parameter; default 1000), and if there are items waiting
+	in the queue, it will pop them off and invoke their save() method
+	
+	TERMINATION
+	The thread will immediately terminate if ANY pointers become NULL
+	To allow for safe termination, the OutputWorkerThread is passed a pointer to a boolean
+	(called terminateSignal). If the value it points to becomes true, the 
+	OutputWorkerThread will terminate AFTER emptying the queue and writing all data,
+	allowing the OutputQueue to be safely deleted
+	the proper order of operations in the calling thread should be:
+		1. create queue and a terminate signal variable
+		2. create OutputWorkerThread with pointers to the above variables
+		3. do work
+		4. set the terminate signal to false
+		5. join the OutputWorkerThread
+		6. delete queue/clean up all objects
+*/
+{
+	public:
+	OutputWorkerThread(OutputQueue * queue, bool * const terminateSignal, 
+			int pollFreqMilliseconds = 1000);
+	
 };
 
 
