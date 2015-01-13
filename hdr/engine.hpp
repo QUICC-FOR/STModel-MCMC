@@ -24,7 +24,8 @@ namespace STMEngine {
 class Metropolis
 {
 	public:
-	Metropolis();	// runs the sampler automagically	
+	Metropolis(STMParameters::STModelParameters * const params, STMOutput::OutputQueue * 
+			const queue, STMLikelihood::Likelihood * const lhood);
 	~Metropolis();
 	void run_sampler(int n);
 
@@ -38,9 +39,9 @@ class Metropolis
 	void set_up_rng();
 	
 	// pointers to objects that the engine doesn't own, but that it uses
-	STMParameters::STModelParameters * parameters;
-	STMOutput::OutputQueue * outputQueue;
-	STMLikelihood::Likelihood * likelihood;
+	STMParameters::STModelParameters * const parameters;
+	STMOutput::OutputQueue * const outputQueue;
+	STMLikelihood::Likelihood * const likelihood;
 
 	// objects that the engine owns
 	std::vector<std::vector<double> > currentSamples;

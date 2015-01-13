@@ -6,7 +6,8 @@ CF=-std=c++11
 CO=$(CF) -fopenmp
 #CO=$(CF)
 
-bin/main.o: src/main.cpp hdr/engine.hpp
+bin/main.o: src/main.cpp hdr/engine.hpp hdr/output.hpp hdr/parameters.hpp \
+hdr/likelihood.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/main.o src/main.cpp
 

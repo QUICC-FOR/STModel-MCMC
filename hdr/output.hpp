@@ -31,6 +31,7 @@
 #include <vector>
 #include <mutex>
 #include <deque>
+#include <chrono>
 
 
 namespace STMOutput {
@@ -144,9 +145,15 @@ class OutputWorkerThread
 */
 {
 	public:
-	OutputWorkerThread(OutputQueue * queue, bool * const terminateSignal, 
+	void start();
+	OutputWorkerThread(OutputQueue * const queue, bool * const terminateSignal, 
 			int pollFreqMilliseconds = 1000);
 	
+	private:
+	OutputQueue * const qu;
+	bool * const endsig;
+	std::chrono::milliseconds sleepTime;
+	bool terminate;
 };
 
 

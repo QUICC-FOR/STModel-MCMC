@@ -42,7 +42,7 @@ using std::vector;
 
 namespace STMLikelihood {
 
-Likelihood::Likelihood(vector<Transition> data) :
+Likelihood::Likelihood(const std::vector<Transition> & data) :
 	transitions(data)
 {
 

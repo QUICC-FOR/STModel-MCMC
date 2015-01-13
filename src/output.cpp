@@ -1,7 +1,6 @@
 #include "../hdr/output.hpp"
 #include <iostream>
 #include <stdexcept>
-#include <chrono>
 #include <thread>
 
 using std::vector;
@@ -55,19 +54,17 @@ OutputBuffer OutputQueue::pop()
 {
 	if(empty())
 		throw std::runtime_error("OutputQueue::pop: tried to pop from an empty queue");
-	queueMutex.lock();
+	std::lock_guard<std::mutex> lock(queueMutex);
 	OutputBuffer returnVal = data.front();
 	data.pop_front();
-	queueMutex.unlock();
 	return returnVal;
 }
 
 
 void OutputQueue::push(const OutputBuffer & dat)
 {
-	queueMutex.lock();
+	std::lock_guard<std::mutex> lock(queueMutex);
 	data.push_back(dat);
-	queueMutex.unlock();
 }
 
 
@@ -80,15 +77,12 @@ OutputQueue::OutputQueue()
 
 
 
-OutputWorkerThread::OutputWorkerThread(OutputQueue * queue, bool * const terminateSignal, 
-		int pollFreqMilliseconds)
+void OutputWorkerThread::start()
 {
-	std::chrono::milliseconds sleepTime (pollFreqMilliseconds);
-	bool terminate = false;
-	while(queue != NULL && terminateSignal != NULL && !terminate) {
-		terminate = *terminateSignal;
-		while(!queue->empty()) {
-			OutputBuffer buff = queue->pop();
+	while(qu != NULL && endsig != NULL && !terminate) {
+		terminate = *endsig;
+		while(!qu->empty()) {
+			OutputBuffer buff = qu->pop();
 			buff.save();
 		}		
 		if(!terminate)
@@ -96,5 +90,10 @@ OutputWorkerThread::OutputWorkerThread(OutputQueue * queue, bool * const termina
 	}
 }
 
+
+OutputWorkerThread::OutputWorkerThread(OutputQueue * const queue, bool * const 
+		terminateSignal, int pollFreqMilliseconds) : qu(queue), endsig(terminateSignal), 
+		sleepTime(pollFreqMilliseconds), terminate(false)
+{ }
 
 } // STMOutput

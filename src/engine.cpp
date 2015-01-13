@@ -11,6 +11,23 @@ using std::vector;
 
 namespace STMEngine {
 
+/*
+	note: the use of the rng pointer here is borken and NOT thread safe;
+	the reference counter gets decremented with each destruction, but is not incremented
+	on copy
+	also, the rng pointer and ref count are static
+	
+	1. need to make copy constructor and overload = that includes incrementing, but not
+			setting up the rng (unless it is null)
+	2. need to make the variable non-static; EACH independent engine has it's very own
+			rng
+	3. another possibility would be to run set_up_rng() ONLY when the engine is started
+			rather than on construction. once an engine is started, it shouldn't be
+			copied anymore. could add extra safety by defining the copy constructors,
+			and by setting the pointer to NULL in the default constructor
+		--note, I like #3; it delays construction of the RNG until it is needed
+*/
+
 // static variable definition
 gsl_rng * Metropolis::rng = NULL;
 int Metropolis::rngReferenceCount = 0;
@@ -19,12 +36,20 @@ int Metropolis::rngReferenceCount = 0;
 	Implementation of public functions
 */
 
-Metropolis::Metropolis() :
+Metropolis::Metropolis(STMParameters::STModelParameters * const params, 
+		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood) :
+// objects that are not owned by the object
+parameters(params), outputQueue(queue), likelihood(lhood),
+
 // the parameters below have default values with no support for changing them
 outputBufferSize(50000), adaptationSampleSize(10000), adaptationRate(1.1)
 {
+	// check pointers
+	if(!queue || !params || !lhood)
+		throw std::runtime_error("Metropolis: passed null pointer on construction");
 	set_up_rng();
 }
+
 
 Metropolis::~Metropolis()
 {

@@ -53,7 +53,7 @@ typedef double (*LhoodFuncPtr)(STMParameters::TransitionRates, std::map<char, do
 
 class Likelihood {
 	public:
-  	Likelihood(std::vector<Transition> data);
+  	Likelihood(const std::vector<Transition> & data);
 	double compute_log_likelihood(STMParameters::STModelParameters params);
 	double log_prior(int i, double val);
 
