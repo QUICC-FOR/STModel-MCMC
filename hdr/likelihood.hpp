@@ -39,6 +39,11 @@ namespace STMParameters {
 
 namespace STMLikelihood {
 
+struct PriorDist {
+	double mean;
+	double sd;
+};
+
 struct Transition {
 	char initial, final;
 	double env1, env2;
@@ -53,20 +58,16 @@ typedef double (*LhoodFuncPtr)(STMParameters::TransitionRates, std::map<char, do
 
 class Likelihood {
 	public:
-  	Likelihood(const std::vector<Transition> & data);
-	double compute_log_likelihood(STMParameters::STModelParameters params);
-	double log_prior(int i, double val);
+  	Likelihood(const std::vector<Transition> & transitionData, 
+  			const std::map<std::string, PriorDist> & pr);
+	double compute_log_likelihood(const STMParameters::STModelParameters & params);
+	double log_prior(const std::pair<std::string, double> & param) const;
 
 	private:
-	struct PriorDist {
-  		double mean;
-  		double sd;
-	};
   
-	// check to make sure these variables are properly initialized
 	std::vector<Transition> transitions;
 	std::map<char, std::map<char, LhoodFuncPtr> > lhood;
-	std::vector<PriorDist> priors;
+	std::map<std::string, PriorDist> priors;
 };
 
 } // !STMLikelihood namespace

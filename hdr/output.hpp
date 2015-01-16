@@ -30,6 +30,7 @@
 #include <sstream>
 #include <vector>
 #include <mutex>
+#include <map>
 #include <deque>
 #include <chrono>
 
@@ -82,10 +83,12 @@ class OutputBuffer: protected OutputOptions
 		  the object will be written to disk. See the documentation for class 
 		  OutputOptions for details
 	*/
-	OutputBuffer(const std::vector<double> & data, OutputKeyType key, 
-		  OutputOptions options = OutputOptions());
-  	OutputBuffer(const std::vector<std::vector<double> > data, OutputKeyType key, 
-  		  OutputOptions options = OutputOptions());
+	OutputBuffer(const std::map<std::string, double> & data, 
+			const std::vector<std::string> & keyOrder, OutputKeyType key, 
+			OutputOptions options = OutputOptions());
+	OutputBuffer(const std::vector<std::map<std::string, double> > & data, 
+			const std::vector<std::string> & keyOrder, OutputKeyType key, 
+			OutputOptions options = OutputOptions());
 
 	
 	/*
@@ -97,7 +100,8 @@ class OutputBuffer: protected OutputOptions
 
 
 	private:
-	std::vector<std::vector<double> > dat;
+	std::vector<std::string> keys;	// controls the order in which data are written
+	std::vector<std::map<std::string, double> > dat;
 	bool dataWritten;
 	
 	template<typename T> 

@@ -4,12 +4,10 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <vector>
+#include <map>
+#include "parameters.hpp"
 
 // forward declarations
-namespace STMParameters {
-	class STModelParameters;
-}
-
 namespace STMOutput {
 	class OutputQueue;
 }
@@ -24,34 +22,40 @@ namespace STMEngine {
 class Metropolis
 {
 	public:
-	Metropolis(STMParameters::STModelParameters * const params, STMOutput::OutputQueue * 
-			const queue, STMLikelihood::Likelihood * const lhood);
+	Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
+			STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * 
+			const lhood, bool rngSetSeed = false, int rngSeed = 0);
+	Metropolis(const Metropolis & m);
+	Metropolis & operator= (const Metropolis &m);
 	~Metropolis();
 	void run_sampler(int n);
 
 	private:
 	// private functions
 	void auto_adapt();
-	std::vector<double> do_sample(int n);
-	double propose_parameter(int index);
-	int select_parameter(double p, int index);
-	double log_posterior_prob(std::vector<double> params, int index);
+	std::map<std::string, double> do_sample(int n);
+	STMParameters::STMParameterPair propose_parameter(const 
+			STMParameters::STMParameterNameType & par) const;
+	int select_parameter(const STMParameters::STMParameterPair & p);
+	double log_posterior_prob(const STMParameters::STModelParameters & par, 
+			const STMParameters::STMParameterPair & pair) const;
 	void set_up_rng();
 	
 	// pointers to objects that the engine doesn't own, but that it uses
-	STMParameters::STModelParameters * const parameters;
-	STMOutput::OutputQueue * const outputQueue;
-	STMLikelihood::Likelihood * const likelihood;
+	STMOutput::OutputQueue * outputQueue;
+	STMLikelihood::Likelihood * likelihood;
 
 	// objects that the engine owns
-	std::vector<std::vector<double> > currentSamples;
-	static gsl_rng * rng;
-	static int rngReferenceCount;
+	STMParameters::STModelParameters parameters;
+	std::vector<STMParameters::STMParameterMap> currentSamples;
+	gsl_rng * rng;
 
 	// settings
 	int outputBufferSize;
 	int adaptationSampleSize;
 	double adaptationRate;
+	bool rngSetSeed;
+	int rngSeed;
 };
 
 } // namespace

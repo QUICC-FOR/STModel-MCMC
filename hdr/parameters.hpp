@@ -8,44 +8,56 @@
 
 namespace STMParameters {
 
-class parameter_error: public std::runtime_error
-{
-	public:
-	parameter_error() : runtime_error("Unknown state passed to Parameters object") {};
-};
+/*
+	the following types ensure type safety for parameters, allowing types to be easily
+	changed without changing other parts of the program
+	under no circumstances should raw types (e.g., double) be used to refer to parameters
+	
+	STMParameterValueType:
+		this is the type that a parameter value takes
+	STMParameterNameType:
+		the type that a parameter name takes (usually std::string)
+	STMParameterMap:
+		a map of name-value pairs for parameters
+	STMParameterPair:
+		a single name-value pair for parameters
+*/
+typedef double STMParameterValueType;
+typedef std::string STMParameterNameType;
+typedef std::map<STMParameterNameType, STMParameterValueType> STMParameterMap;
+typedef std::pair<STMParameterNameType, STMParameterValueType> STMParameterPair;
 
 
+// a convenience container with the full set of macro parameters
 struct TransitionRates
 {
-	double alpha_b, alpha_t, beta_b, beta_t, theta, theta_t, epsilon;
+	STMParameterValueType alpha_b, alpha_t, beta_b, beta_t, theta, theta_t, epsilon;
 
-	TransitionRates(double ab, double at, double bb, double bt, double t, double tt, 
-			double e) : alpha_b(ab), alpha_t(at), beta_b(bb), beta_t(bt), theta(t), 
-			theta_t(tt), epsilon(e) {}
+	TransitionRates(STMParameterValueType ab, STMParameterValueType at, 
+			STMParameterValueType bb, STMParameterValueType bt, STMParameterValueType t, 
+			STMParameterValueType tt, STMParameterValueType e) : alpha_b(ab), alpha_t(at),
+			beta_b(bb), beta_t(bt), theta(t), theta_t(tt), epsilon(e) {}
 };
 
 
-struct Parameter
+struct ParameterSettings
 /*
 	data-only object containing all of the relevant information about a single parameter
-	value: the current value of the parameter
 	name: the name of the parameter
 	variance: the sampling variance of the parameter (used for tuning)
 	acceptanceRate: the most recent acceptance rate of the parameter
 	initialValue: the initial value of the parameter
 */
 {
-	double value;
-	std::string name;
-	double initialValue;
+	STMParameterNameType name;
+	STMParameterValueType initialValue;
 	double variance;
 	double acceptanceRate;
 	
-	Parameter() {}
+	ParameterSettings() {}
 	
-	Parameter(double val, std::string parName, double init, double var = 1): 
-			value(val), name(parName), initialValue(init), variance(var), 
-			acceptanceRate(0) {}
+	ParameterSettings(STMParameterNameType parName, STMParameterValueType init, double var = 1): 
+			name(parName), initialValue(init), variance(var), acceptanceRate(0) {}
 };
 
 
@@ -54,9 +66,11 @@ class STModelParameters
 	public:
 	/*
 		create the object
-		data is garbage; will be replaced with something that makes sense
+		initPars: the initial set of parameters; see the documentation for the Parameter
+		struct. This will give the model not only the starting values, but the parameter
+		names and starting variances
 	*/
-	STModelParameters(const std::vector<Parameter> & initPars);
+	STModelParameters(const std::vector<ParameterSettings> & initPars);
 
 
 	/* 
@@ -64,7 +78,7 @@ class STModelParameters
 		parameters (stored internally) to generate the transition rates
 	*/
 	TransitionRates generate_rates(double env1, double env2, int interval,
-	  double borealExpected) const;
+			double borealExpected) const;
 
 
 	/*
@@ -81,9 +95,13 @@ class STModelParameters
 		note that update does only basic bounds checking - it will throw an exception on
 		invalid indices; however values are treated as correct and within the parameters 
 		of the model
+		
+		const STMParameterPair & at(const STMParameterNameType & p) const
+		returns the value of the given parameter
 	*/	
-	std::map<std::string, double> current_state() const;
-	void update(std::string par, double val);
+	const STMParameterMap & current_state() const;
+	void update(const STMParameterPair & par);
+	STMParameterPair at(const STMParameterNameType & p) const;
 
 
 	/*
@@ -92,14 +110,14 @@ class STModelParameters
 		rejection rates) and vice-versa. These values can be automatically adjusted
 		to "tune" the sampler for optimal rejection rates
 
-		sampler_variance(std::string par)
+		sampler_variance(STMParameterNameType par)
 		returns the variance of parameter par
 		
 		set_sampler_variance(std::string par, double val)
 		sets the variance of parameter par to the value val
 	*/
-	const double & sampler_variance(std::string par) const;
-	void set_sampler_variance(std::string par, double val);
+	double sampler_variance(const STMParameterNameType & par) const;
+	void set_sampler_variance(const STMParameterNameType & par, double val);
 	
 	
 	/*
@@ -108,48 +126,52 @@ class STModelParameters
 		these functions allow the engine to interact with the adaptation state
 		of the parameters
 		
-		set_acceptance_rates(std::vector<double> rates)
-		sets the acceptance rates to the values specified in rates (which must be
-		a vector the same length as the number of parameters)
+		set_acceptance_rates(STMParameterMap rates)
+		sets all acceptance rates; expects a map keyed by parameter name
 		
-		not_adapted(int i)
-		for parameter i, returns -1 if the acceptance rate is too low, 1 if too high,
-		and 0 if the parameter is adapted
+		set_acceptance_rates(STMParameterNameType par, double rate)
+		sets the acceptance rates of a single parameter
+		
+		not_adapted(STMParameterNameType par)
+		returns -1 if the acceptance rate is too low, 1 if too high, and 0 if the 
+		parameter is adapted
 		
 		adapted()
 		returns true if all parameters are adapted
 	*/
-	void set_acceptance_rate(std::string par, double rate);
-	int not_adapted(std::string par) const;
+	void set_acceptance_rates(const std::map<STMParameterNameType, double> & rates);
+	void set_acceptance_rate(const STMParameterNameType & par, double rate);
+	int not_adapted(const STMParameterNameType & par) const;
 	bool adapted() const;
 
 	/*
 		Utility functions
 		size() returns the number of parameters
-		names() returns a const reference to the list of parameter names
+		names() returns a const reference to the list of parameter names; this function
+			is guaranteed to always return names in the same order for the duration of
+			the program (not just the life of a single instance of the STModelParameter 
+			class) 
 		reset() sets the parameter object to its initial state and returns the iteration 
 			counter to 0
 		increment(int n) increases the iteration counter by n (default of 1)
 	*/
 	size_t size() const;
-	const std::vector<std::string> & names();
+	const std::vector<STMParameterNameType> & names() const;
 	void reset();
 	void increment(int n = 1);
 
 		
 	private:
-	std::map<char, double> make_annual(const std::map<char, double> val, int interval) const;
-	double make_annual(const double logit_val, int interval) const;
+	STMParameterValueType make_annual(STMParameterValueType logit_val, int interval) const;
 	
-	// need to write functions to get all of these data members initialized and filled
-//	std::vector<double> parameters;
-//	std::vector<double> variance;
-//	std::vector<double> acceptanceRates;
-	std::vector<double> targetAcceptanceInterval;
-//	std::vector<double> inits;
+	// static variables; these are shared among ALL parameter objects
+	static std::vector<STMParameterNameType> parNames;
+	static std::map<STMParameterNameType, ParameterSettings> parSettings;
+	static std::vector<double> targetAcceptanceInterval;
+
+	// the data below is owned by each individual object
 	double iterationCount;
-	std::map<std::string, Parameter> parameters;
-	std::vector<std::string> parNames;
+	STMParameterMap parameterValues;
 };
 
 

@@ -5,6 +5,23 @@
 
 using std::vector;
 
+/*
+	PROBLEM TO FIX:
+	OutputBuffer is created with a map; however, there is no way to control the ordering
+	of elements, so it will differ from one buffer to the next. this is a major problem
+	when writing the data, as parameter values will be scrambled. Need to build in a way
+	(possibly via the save() function) to access elements by name but in a consistent
+	order
+	
+	it might look like this:
+	the outputWorker, on init, gets its posterior parameter names and stores them in a
+	vector
+	the save() method accepts this vector as an optional parameter; if it is there, then
+	it will use the ordering of items in that vector; thus, when saving posterior samples
+	we can always use the same order
+
+
+*/
 
 namespace STMOutput {
 
@@ -14,30 +31,40 @@ OutputOptions::OutputOptions(std::string baseFileName,
 { }
 
 
-OutputBuffer::OutputBuffer(const vector<double> & data, OutputKeyType key, 
-  OutputOptions options) : OutputOptions(options), dataWritten(false)
+OutputBuffer::OutputBuffer(const std::map<std::string, double> & data, 
+		const std::vector<std::string> & keyOrder, OutputKeyType key, 
+		OutputOptions options) : OutputOptions(options), keys(keyOrder), 
+		dataWritten(false)
 {
 	dat.push_back(data);
 }
 
 
-OutputBuffer::OutputBuffer(const vector<vector<double> > data, OutputKeyType key, 
-  OutputOptions options) : OutputOptions(options), dat(data), dataWritten(false)
+OutputBuffer::OutputBuffer(const std::vector<std::map<std::string, double> > & data, 
+		const std::vector<std::string> & keyOrder, OutputKeyType key, 
+		OutputOptions options) : OutputOptions(options), dat(data), keys(keyOrder), 
+		dataWritten(false)
 { }
+
 
 void OutputBuffer::save()
 {
 	if(dataWritten) return;
 	
-	
-	
 	// stdout implementation (the only one thus far)
 	vector<std::string> stdoutData;
-	if(header.size() > 0)
-		stdoutData.push_back(vec_to_str(header));
+
+//	FIX --- writing the header isn't implemented, because it doesn't make the same sense
+// 	now that data are stored as a map; instead should just write the keys if a flag is set
+// indicating that the header needs to be written
+// 	if(header.size() > 0)
+// 		stdoutData.push_back(vec_to_str(header));
 		
-	for(vector<vector<double> >::iterator i = dat.begin(); i != dat.end(); i++) {
-		stdoutData.push_back(vec_to_str(*i));
+	for(const auto & row : dat) {
+		std::vector<double> vals;
+		for(const auto & name : keys)
+			vals.push_back(row.at(name));
+		stdoutData.push_back(vec_to_str(vals));		
 	}
 
 	// write to stdout

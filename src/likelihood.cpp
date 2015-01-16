@@ -42,8 +42,9 @@ using std::vector;
 
 namespace STMLikelihood {
 
-Likelihood::Likelihood(const std::vector<Transition> & data) :
-	transitions(data)
+Likelihood::Likelihood(const std::vector<Transition> & transitionData, 
+		const std::map<std::string, PriorDist> & pr) : transitions(transitionData), 
+		priors(pr)
 {
 
 	/* 
@@ -75,52 +76,52 @@ Likelihood::Likelihood(const std::vector<Transition> & data) :
 			lhood[tr.initial][tr.final](rates, expected)
 	*/
 	lhood['B']['M'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return r.beta['T'] * (e['T'] + e['M']) * (1-r.epsilon); };
+		{ return r.beta_t * (e['T'] + e['M']) * (1-r.epsilon); };
 
 	lhood['B']['B'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return (1 - r.epsilon - (r.beta['T'] * (e['T'] + e['M']) * 
+		{ return (1 - r.epsilon - (r.beta_t * (e['T'] + e['M']) * 
 			(1-r.epsilon))); };
 
 	lhood['T']['M'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return r.beta['B'] * (e['B']+e['M']) * (1 - r.epsilon); };
+		{ return r.beta_b * (e['B']+e['M']) * (1 - r.epsilon); };
 	
 	lhood['T']['T'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return 1 - r.epsilon - (r.beta['B'] * (e['B']+e['M']) * (
+		{ return 1 - r.epsilon - (r.beta_b * (e['B']+e['M']) * (
 			1 - r.epsilon)); };
 
 	lhood['M']['B'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return r.theta['\0'] * (1 - r.theta['T']) * (1 - r.epsilon); };
+		{ return r.theta * (1 - r.theta_t) * (1 - r.epsilon); };
 		
 	lhood['M']['T'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return r.theta['\0'] * r.theta['T'] * (1 - r.epsilon); };
+		{ return r.theta * r.theta_t * (1 - r.epsilon); };
 	
 	lhood['M']['M'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return r.theta['\0'] * r.theta['T'] * (1 - r.epsilon); };
+		{ return r.theta * r.theta_t * (1 - r.epsilon); };
 
 	lhood['M']['R'] = lhood['T']['R'] = lhood['B']['R'] =
 		[](STMParameters::TransitionRates r, std::map<char, double> e)
 		{ return r.epsilon; };
 
 	lhood['R']['B'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return r.alpha['B'] * (e['M'] + e['B']) * (1 - r.alpha['T']*(e['T']+e['M'])); };	// phi_b	
+		{ return r.alpha_b * (e['M'] + e['B']) * (1 - r.alpha_t*(e['T']+e['M'])); };	// phi_b	
 	
 	lhood['R']['T'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return r.alpha['T'] * (e['M'] + e['T']) * (1 - r.alpha['B']*(e['B']+e['M'])); };	// phi_t
+		{ return r.alpha_t * (e['M'] + e['T']) * (1 - r.alpha_b*(e['B']+e['M'])); };	// phi_t
 	
 	lhood['R']['M'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
-		{ return r.alpha['B'] * (e['M'] + e['B']) * (r.alpha['T'] * (e['M'] + e['T'])); };	// phi_m
+		{ return r.alpha_b * (e['M'] + e['B']) * (r.alpha_t * (e['M'] + e['T'])); };	// phi_m
 
 	lhood['R']['R'] = [](STMParameters::TransitionRates r, std::map<char, double> e)
 		{ return 1 - 
-			(r.alpha['B'] * (e['M'] + e['B']) * (1 - r.alpha['T']*(e['T']+e['M']))) - 	// phi_b
-			(r.alpha['T'] * (e['M'] + e['T']) * (1 - r.alpha['B']*(e['B']+e['M']))) - 	// phi_t
-			(r.alpha['B'] * (e['M'] + e['B']) * (r.alpha['T'] * (e['M'] + e['T'])));	// phi_m
+			(r.alpha_b * (e['M'] + e['B']) * (1 - r.alpha_t*(e['T']+e['M']))) - 	// phi_b
+			(r.alpha_t * (e['M'] + e['T']) * (1 - r.alpha_b*(e['B']+e['M']))) - 	// phi_t
+			(r.alpha_b * (e['M'] + e['B']) * (r.alpha_t * (e['M'] + e['T'])));	// phi_m
 		};
 
 }
 
 
-double Likelihood::compute_log_likelihood(STMParameters::STModelParameters params)
+double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters & params)
 {
 	double sumlogl = 0;
 
@@ -147,8 +148,9 @@ double Likelihood::compute_log_likelihood(STMParameters::STModelParameters param
 
 
 
-double Likelihood::log_prior(int i, double val)
+double Likelihood::log_prior(const std::pair<std::string, double> & param) const
 {
-	return std::log(gsl_ran_gaussian_pdf(val - priors.at(i).mean, priors.at(i).sd));
+	return std::log(gsl_ran_gaussian_pdf(param.second - priors.at(param.first).mean, 
+			priors.at(param.first).sd));
 }
 } //!namespace Likelihood

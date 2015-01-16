@@ -10,21 +10,20 @@ int main(int argc, char ** argv)
 	// handle arguments
 	int maxIterations = 100;	// temporary value
 	
-	// handle input data
-	std::vector<double> initialValues;
+	// handle input data -- will need to write the code to get these from disk
+	std::vector<STMParameters::ParameterSettings> inits;
 	std::vector<STMLikelihood::Transition> transitionData;
+	std::map<std::string, STMLikelihood::PriorDist> priors;
 	
 	// create and initialize main objects
 	STMOutput::OutputQueue * outQueue = new STMOutput::OutputQueue;
-	STMParameters::STModelParameters * parameters = new STMParameters::STModelParameters 
-			(initialValues);
 	STMLikelihood::Likelihood * likelihood = new STMLikelihood::Likelihood 
-			(transitionData);
+			(transitionData, priors);
 
 	// spawn engine and outputworker in threads
 	bool engineFinished = false;
 	std::thread engineThread (&STMEngine::Metropolis::run_sampler, 
-			STMEngine::Metropolis(parameters, outQueue, likelihood), maxIterations);
+			STMEngine::Metropolis(inits, outQueue, likelihood), maxIterations);
 	std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 			STMOutput::OutputWorkerThread(outQueue, &engineFinished));
 	
@@ -38,6 +37,7 @@ int main(int argc, char ** argv)
 	
 	// any remaining cleanup
 	delete outQueue;
+	delete likelihood;
 	
 	return 0;
 }
