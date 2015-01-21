@@ -7,7 +7,7 @@ CO=$(CF) -fopenmp
 #CO=$(CF)
 
 bin/main.o: src/main.cpp hdr/engine.hpp hdr/output.hpp hdr/parameters.hpp \
-hdr/likelihood.hpp
+hdr/likelihood.hpp hdr/input.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/main.o src/main.cpp
 
@@ -28,7 +28,7 @@ bin/output.o: src/output.cpp hdr/output.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/output.o src/output.cpp
 
-bin/input.o: src/input.cpp hdr/input.hpp
+bin/input.o: src/input.cpp hdr/input.hpp hdr/parameters.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/input.o src/input.cpp
 

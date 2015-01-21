@@ -1,5 +1,6 @@
 #include <thread>
 #include <vector>
+#include <iostream>
 #include "../hdr/engine.hpp"
 #include "../hdr/output.hpp"
 #include "../hdr/input.hpp"
@@ -9,23 +10,25 @@
 int main(int argc, char ** argv)
 {
 	// handle arguments
-	int maxIterations = 100;	// temporary value
+	int maxIterations = 100;	// temporary values
+	const char * parFileName = "inp/inits.txt";
+	const char * transFileName = "inp/trans.txt";
 	
 	// handle input data -- will need to write the code to get these from disk
-	try {
-	
-	
-	}
-	catch (STMInput::STMInputError &e {
-		exit(1);
-	}
-	catch (std::runtime_error &e) {
-		exit(1);
-	}
-	
 	std::vector<STMParameters::ParameterSettings> inits;
 	std::vector<STMLikelihood::Transition> transitionData;
 	std::map<std::string, STMLikelihood::PriorDist> priors;
+	try {
+		STMInput::STMInputHelper inp (parFileName, transFileName);
+		inits = inp.parameter_inits();
+//		priors = inp.priors();
+//		transitionData = inp.transitions();
+	}
+	catch (std::runtime_error &e) {
+		std::cerr << e.what() << '\n';
+		exit(1);
+	}
+	
 	
 	// create and initialize main objects
 	STMOutput::OutputQueue * outQueue = new STMOutput::OutputQueue;

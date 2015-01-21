@@ -48,6 +48,7 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include "../hdr/parameters.hpp"
 
 namespace STMInput {
 
@@ -71,16 +72,35 @@ class STMInputHelper
 {
 	public:
 	STMInputHelper(const std::string & parFileName, const std::string & transFileName);
+	std::vector<STMParameters::ParameterSettings> parameter_inits();
+
+	// public functions to implement:
+// 	std::map<std::string, STMLikelihood::PriorDist> inp.priors();
+// 	std::vector<STMLikelihood::Transition> transitionData = inp.transitions();
 	
 	private:
 	CSV paramData;
 	CSV transitionData;
+	std::vector<std::string> parNames;
+	std::vector<STMParameters::STMParameterValueType> initVals;
+	std::vector<double> parVariance, priorMean, priorSD;
+	
+	const std::vector<std::string> & parameter_names();
+	const std::vector<STMParameters::STMParameterValueType> & intial_values();
+	const std::vector<double> & parameter_variance();
+	const std::vector<double> & prior_mean();
+	const std::vector<double> & prior_sd();
+	void display_parameter_help() const;
+	
+	// functions to implement:
+	void display_transition_help() const;
 };
 
 
 class STMInputError : public std::runtime_error
-{
-
+{ 
+	public:
+	STMInputError() : std::runtime_error("") {}
 };
 
 
