@@ -30,3 +30,5 @@
 src/ref*
 bin/*
 test/bin/*
+
+*.bbprojectd

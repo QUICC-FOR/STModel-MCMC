@@ -28,6 +28,9 @@ bin/output.o: src/output.cpp hdr/output.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/output.o src/output.cpp
 
+bin/input.o: src/input.cpp hdr/input.hpp
+	mkdir -p bin
+	$(CC) $(CO) -c -o bin/input.o src/input.cpp
 
 
 

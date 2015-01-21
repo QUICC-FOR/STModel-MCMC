@@ -2,6 +2,7 @@
 #include <vector>
 #include "../hdr/engine.hpp"
 #include "../hdr/output.hpp"
+#include "../hdr/input.hpp"
 #include "../hdr/parameters.hpp"
 #include "../hdr/likelihood.hpp"
 
@@ -11,6 +12,17 @@ int main(int argc, char ** argv)
 	int maxIterations = 100;	// temporary value
 	
 	// handle input data -- will need to write the code to get these from disk
+	try {
+	
+	
+	}
+	catch (STMInput::STMInputError &e {
+		exit(1);
+	}
+	catch (std::runtime_error &e) {
+		exit(1);
+	}
+	
 	std::vector<STMParameters::ParameterSettings> inits;
 	std::vector<STMLikelihood::Transition> transitionData;
 	std::map<std::string, STMLikelihood::PriorDist> priors;
