@@ -49,6 +49,7 @@
 #include <sstream>
 #include <stdexcept>
 #include "../hdr/parameters.hpp"
+#include "../hdr/likelihood.hpp"
 
 namespace STMInput {
 
@@ -73,17 +74,18 @@ class STMInputHelper
 	public:
 	STMInputHelper(const std::string & parFileName, const std::string & transFileName);
 	std::vector<STMParameters::ParameterSettings> parameter_inits();
-
-	// public functions to implement:
-// 	std::map<std::string, STMLikelihood::PriorDist> inp.priors();
-// 	std::vector<STMLikelihood::Transition> transitionData = inp.transitions();
+	std::map<std::string, STMLikelihood::PriorDist> priors();
+	std::vector<STMLikelihood::Transition> transitions();
 	
 	private:
 	CSV paramData;
 	CSV transitionData;
 	std::vector<std::string> parNames;
 	std::vector<STMParameters::STMParameterValueType> initVals;
-	std::vector<double> parVariance, priorMean, priorSD;
+	std::vector<double> parVariance, priorMean, priorSD, env1, env2;
+	std::vector<std::string> initialState, finalState;
+	std::vector<int> trInterval;
+	std::vector<std::map<std::string, double> >	expectedProbs;
 	
 	const std::vector<std::string> & parameter_names();
 	const std::vector<STMParameters::STMParameterValueType> & intial_values();
@@ -91,9 +93,13 @@ class STMInputHelper
 	const std::vector<double> & prior_mean();
 	const std::vector<double> & prior_sd();
 	void display_parameter_help() const;
-	
-	// functions to implement:
 	void display_transition_help() const;
+	const std::vector<std::string> & initial_state();
+	const std::vector<std::string> & final_state();
+	const std::vector<double> & env_1();
+	const std::vector<double> & env_2();
+	const std::vector<std::map<std::string, double> > & expected_probs();
+	const std::vector<int> & tr_interval();
 };
 
 

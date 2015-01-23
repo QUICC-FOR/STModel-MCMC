@@ -21,8 +21,8 @@ int main(int argc, char ** argv)
 	try {
 		STMInput::STMInputHelper inp (parFileName, transFileName);
 		inits = inp.parameter_inits();
-//		priors = inp.priors();
-//		transitionData = inp.transitions();
+		priors = inp.priors();
+		transitionData = inp.transitions();
 	}
 	catch (std::runtime_error &e) {
 		std::cerr << e.what() << '\n';

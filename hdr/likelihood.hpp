@@ -42,6 +42,8 @@ namespace STMLikelihood {
 struct PriorDist {
 	double mean;
 	double sd;
+	PriorDist() {}
+	PriorDist (double m, double s) : mean(m), sd(s) {}
 };
 
 struct Transition {

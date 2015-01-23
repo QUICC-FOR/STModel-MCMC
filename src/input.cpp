@@ -6,6 +6,19 @@
 namespace STMInput
 {
 
+std::map<std::string, STMLikelihood::PriorDist> STMInputHelper::priors()
+{
+	std::map<std::string, STMLikelihood::PriorDist> result;
+	std::vector<std::string> parNames = parameter_names();
+	std::vector<double> means = prior_mean();
+	std::vector<double> sds = prior_sd();
+	for(int i = 0; i < parNames.size(); ++i)
+		result[parNames[i]] = STMLikelihood::PriorDist (means.at(i), sds.at(i));
+	return result;
+}
+
+
+
 STMInputHelper::STMInputHelper(const std::string & parFileName, 
 		const std::string & transFileName) : paramData(parFileName.c_str()),
 		transitionData(transFileName.c_str())
@@ -17,13 +30,23 @@ STMInputHelper::STMInputHelper(const std::string & parFileName,
 		const std::vector<STMParameters::STMParameterValueType> & testVals = intial_values();
 		const std::vector<double> & testMean = prior_mean();
 		const std::vector<double> & testSD = prior_sd();		
-		// add checks for prior mean and variance
 	}
 	catch (std::out_of_range &e) {
 		display_parameter_help();
 		throw STMInputError();
 	}
-	// add check for the transition data file
+	try {
+		const std::vector<std::string> & testInitState = initial_state();
+		const std::vector<std::string> & testFinalState = final_state();
+		const std::vector<double> & testEnv1 = env_1();
+		const std::vector<double> & testEnv2 = env_2();
+		const std::vector<std::map<std::string, double> > & testExpected = expected_probs();
+		const std::vector<int> & testInterval = tr_interval();
+	}
+	catch (std::out_of_range &e) {
+		display_transition_help();
+		throw STMInputError();
+	}
 }
 
 
@@ -48,6 +71,25 @@ std::vector<STMParameters::ParameterSettings> STMInputHelper::parameter_inits()
 	}
 	return(result);
 }
+
+
+std::vector<STMLikelihood::Transition> transitions()
+{
+	std::vector<STMLikelihood::Transition> result;
+	std::vector<char> initial = initial_state();
+	for(int i = 0; i < initial.size(); ++i)
+	{
+	
+	}
+}
+/*
+struct Transition {
+	char initial, final;
+	double env1, env2;
+	std::map<char, double> expected;
+	int interval;
+};
+*/
 
 
 const std::vector<std::string> & STMInputHelper::parameter_names()
@@ -90,6 +132,64 @@ const std::vector<double> & STMInputHelper::prior_sd()
 }
 
 
+const std::vector<double> & STMInputHelper::env_1()
+{
+	if(env1.empty())
+		env1 = paramData.column<double>("env1");
+	return env1;
+}
+
+
+const std::vector<double> & STMInputHelper::env_2()
+{
+	if(env2.empty())
+		env2 = paramData.column<double>("env2");
+	return env2;
+}
+
+
+const std::vector<std::map<std::string, double> > & STMInputHelper::expected_probs()
+{
+	if(expectedProbs.empty()) {
+		std::vector<double> B = paramData.column<double>("expectedB");
+		std::vector<double> M = paramData.column<double>("expectedM");
+		std::vector<double> T = paramData.column<double>("expectedT");
+		std::vector<double> R = paramData.column<double>("expectedR");
+		for(int i = 0; i < B.size(); ++i) {
+			std::map<std::string, double> newRow;
+			newRow["B"] = B.at(i);
+			newRow["M"] = M.at(i);
+			newRow["T"] = T.at(i);
+			newRow["R"] = R.at(i);
+			expectedProbs.push_back(newRow);
+		}
+	}
+	return expectedProbs;
+}
+
+const std::vector<int> & STMInputHelper::tr_interval()
+{
+	if(trInterval.empty())
+		trInterval = paramData.column<int>("interval");
+	return trInterval;
+}
+
+
+const std::vector<std::string> & STMInputHelper::final_state()
+{
+	if(finalState.empty())
+		finalState = paramData.column<std::string>("final");
+	return finalState;
+}
+
+
+const std::vector<std::string> & STMInputHelper::initial_state()
+{
+	if(initialState.empty())
+		initialState = paramData.column<std::string>("initial");
+	return initialState;
+}
+
 void STMInputHelper::display_parameter_help() const
 {
 	std::cerr << "Error when reading data from the parameter file: missing required column\n";
@@ -102,6 +202,24 @@ void STMInputHelper::display_parameter_help() const
 	std::cerr << "        priorSD -- the standard deviation of the prior\n";
 	std::cerr << "    Optional:\n";
 	std::cerr << "        samplerVariance -- the variance (step size) to use for tuning the MH sampler\n\n";
+}
+
+
+void STMInputHelper::display_transition_help() const
+{
+	std::cerr << "Error when reading data from the transition file: missing required column\n";
+	std::cerr << "Each row in this file is an observed transition within a single plot\n";	
+	std::cerr << "The file should be comma-delimited with the following columns\n";
+	std::cerr << "Note that the first row must contain column names, and names much match exactly\n";
+	std::cerr << "        initial -- the initial state of the plot\n";
+	std::cerr << "        final -- the final state of the plot\n";
+	std::cerr << "        env1 -- the first environmental variable (temperature)\n";
+	std::cerr << "        env2 -- the second environmental variable (precipitation)\n";
+	std::cerr << "        interval -- number of years between the two samples\n";
+	std::cerr << "        expectedB -- the expected probability of the B state\n";
+	std::cerr << "        expectedT -- the expected probability of the T state\n";
+	std::cerr << "        expectedM -- the expected probability of the M state\n";
+	std::cerr << "        expectedR -- the expected probability of the R state\n\n";
 }
 
 
