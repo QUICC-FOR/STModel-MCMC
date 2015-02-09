@@ -11,14 +11,30 @@ int main(void)
 	std::vector<STMLikelihood::Transition> transitionData;
 	std::map<std::string, STMLikelihood::PriorDist> priors;
 
-	std::cerr << "1\n";
 	STMInput::STMInputHelper inp (parFileName, transFileName);
-	std::cerr << "2\n";
 	inits = inp.parameter_inits();
-// 	std::cerr << "3\n";
-// 	priors = inp.priors();
-// 	std::cerr << "4\n";
-// 	transitionData = inp.transitions();
-// 	std::cerr << "5\n";
+	priors = inp.priors();
+	transitionData = inp.transitions();
 
+	std::cerr << "Initial values:\n";
+	for(auto par : inits)
+		std::cerr << par.name << ": " << par.initialValue << "\n";
+	
+	struct Transition {
+	char initial, final;
+	double env1, env2;
+	std::map<char, double> expected;
+	int interval;
+};
+
+	std::cerr << "\nTransitions:\n";
+	for(auto tr : transitionData) {
+		std::cerr << tr.initial << " -> " << tr.final << " : " << tr.interval << " yr : " << tr.env1 << " " << tr.env2 << "\n";
+		for(auto ex : tr.expected)
+			std::cerr << "    exp" << ex.first << ": " << ex.second << "\n";
+	}
+	
+	std::cerr << "\nPriors\n";
+	for(auto pr : priors)
+		std::cerr << pr.first << ": " << pr.second.mean << ", " << pr.second.sd << "\n";
 }
