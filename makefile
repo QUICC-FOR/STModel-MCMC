@@ -6,6 +6,8 @@ CF=-std=c++11
 CO=$(CF) -fopenmp
 #CO=$(CF)
 
+GSL=-lgsl
+
 bin/main.o: src/main.cpp hdr/engine.hpp hdr/output.hpp hdr/parameters.hpp \
 hdr/likelihood.hpp hdr/input.hpp
 	mkdir -p bin
@@ -36,8 +38,19 @@ bin/input.o: src/input.cpp hdr/input.hpp hdr/parameters.hpp
 
 # TESTS
 
-test: test/bin/output_test
-	./test/bin/output_test
+# test: test/bin/output_test
+# 	./test/bin/output_test
+
+test: test/bin/input_test
+	./test/bin/input_test
+
+test/bin/input_test: test/bin/input_test.o bin/parameters.o bin/likelihood.o bin/input.o
+	$(CC) $(CO) -o test/bin/input_test test/bin/input_test.o bin/parameters.o \
+	bin/likelihood.o bin/input.o $(GSL)
+
+test/bin/input_test.o: test/input_test.cpp hdr/parameters.hpp hdr/likelihood.hpp hdr/input.hpp
+	mkdir -p test/bin
+	$(CC) $(CO) -c -o test/bin/input_test.o test/input_test.cpp	
 
 test/bin/output_test: test/output_test.cpp src/output.cpp hdr/output.hpp
 	mkdir -p test/bin
