@@ -44,7 +44,6 @@ class STMInputHelper
 	std::vector<STMLikelihood::Transition> transitions();
 	
 	private:
-	std::ifstream open_file(const char * filename, std::ifstream & file) const;
 	int get_next_line(std::ifstream &file, std::vector<std::string> &dest, char delim) const;
 	std::map<std::string, int> get_col_numbers(std::vector<std::string> cNames);
 	void read_inits(std::ifstream &file, char delim);

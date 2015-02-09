@@ -8,8 +8,15 @@ namespace STMInput
 STMInputHelper::STMInputHelper (const char * initFileName, const char * transFileName, char delim)
 {
 	std::ifstream initFile, transFile;
-	open_file(initFileName, initFile);
-	open_file(transFileName, transFile);
+	initFile.open(initFileName);
+	transFile.open(transFileName);
+	{
+		std::stringstream err;
+		if(!initFile.is_open()) err << "Failed to open " << initFileName << ">\n";
+		if(!transFile.is_open()) err << "Failed to open " << transFileName << ">\n";
+		if(!err.str().empty()) throw std::runtime_error(err.str());
+	}
+
 
 	// get the column names from the first line of the CSVs and figure out their order
 	std::vector<std::string> initNames, transNames;
@@ -61,16 +68,6 @@ std::map<std::string, int> STMInputHelper::get_col_numbers(std::vector<std::stri
 	return(result);
 }
 
-
-std::ifstream STMInputHelper::open_file(const char * filename, std::ifstream & file) const
-{
-	file.open(filename);
-	if(!file.is_open()) {
-		std::stringstream err;
-		err << "Failed to open file <" << filename << ">\n";
-		throw std::runtime_error(err.str());
-	}
-}
 
 
 int STMInputHelper::get_next_line(std::ifstream &file, std::vector<std::string> &dest, char delim) const
