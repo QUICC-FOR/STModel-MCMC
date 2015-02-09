@@ -1,5 +1,6 @@
 #include "../hdr/input.hpp"
 #include <iostream>
+#include <algorithm>
 
 namespace STMInput
 {
@@ -75,6 +76,10 @@ int STMInputHelper::get_next_line(std::ifstream &file, std::vector<std::string> 
 	std::string line;
 	if(!std::getline(file, line))
 		return 0;
+
+	// clean quotation marks from the string
+	line.erase(std::remove(line.begin(), line.end(), '"'), line.end());
+
 	std::vector<std::string> result = split_line(line, delim);
 	dest.clear();
 	dest.insert(dest.begin(), result.begin(), result.end());
@@ -149,17 +154,19 @@ void STMInputHelper::display_transition_help() const
 void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 {
 	std::vector<std::string> line;
+	int ln = 1;
 	while(get_next_line(file, line, delim)) {
+		if(line.empty()) continue;
 		STMLikelihood::Transition newTrans;
-		newTrans.initial = str_convert<char>(line.at(initColIndices.at("initial")));
-		newTrans.final = str_convert<char>(line.at(initColIndices.at("initial")));
-		newTrans.env1 = str_convert<double>(line.at(initColIndices.at("env1")));
-		newTrans.env2 = str_convert<double>(line.at(initColIndices.at("env2")));
-		newTrans.interval = str_convert<int>(line.at(initColIndices.at("interval")));
-		newTrans.expected['B'] = str_convert<double>(line.at(initColIndices.at("expectedB")));
-		newTrans.expected['T'] = str_convert<double>(line.at(initColIndices.at("expectedT")));
-		newTrans.expected['R'] = str_convert<double>(line.at(initColIndices.at("expectedR")));
-		newTrans.expected['M'] = str_convert<double>(line.at(initColIndices.at("expectedM")));
+		newTrans.initial = str_convert<char>(line.at(transColIndices.at("initial")));
+		newTrans.final = str_convert<char>(line.at(transColIndices.at("final")));
+		newTrans.env1 = str_convert<double>(line.at(transColIndices.at("env1")));
+		newTrans.env2 = str_convert<double>(line.at(transColIndices.at("env2")));
+		newTrans.interval = str_convert<int>(line.at(transColIndices.at("interval")));
+		newTrans.expected['B'] = str_convert<double>(line.at(transColIndices.at("expectedB")));
+		newTrans.expected['T'] = str_convert<double>(line.at(transColIndices.at("expectedT")));
+		newTrans.expected['R'] = str_convert<double>(line.at(transColIndices.at("expectedR")));
+		newTrans.expected['M'] = str_convert<double>(line.at(transColIndices.at("expectedM")));
 		
 		trans.push_back(newTrans);
 	}

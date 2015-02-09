@@ -13,8 +13,8 @@ int main(void)
 
 	std::cerr << "1\n";
 	STMInput::STMInputHelper inp (parFileName, transFileName);
-// 	std::cerr << "2\n";
-// 	inits = inp.parameter_inits();
+	std::cerr << "2\n";
+	inits = inp.parameter_inits();
 // 	std::cerr << "3\n";
 // 	priors = inp.priors();
 // 	std::cerr << "4\n";
