@@ -1,194 +1,120 @@
 #include "../hdr/input.hpp"
-#include <fstream>
 #include <iostream>
-
 
 namespace STMInput
 {
 
-std::map<std::string, STMLikelihood::PriorDist> STMInputHelper::priors()
+
+STMInputHelper::STMInputHelper (const char * initFileName, const char * transFileName, char delim)
 {
-	std::map<std::string, STMLikelihood::PriorDist> result;
-	std::vector<std::string> parNames = parameter_names();
-	std::vector<double> means = prior_mean();
-	std::vector<double> sds = prior_sd();
-	for(int i = 0; i < parNames.size(); ++i)
-		result[parNames[i]] = STMLikelihood::PriorDist (means.at(i), sds.at(i));
-	return result;
-}
+	std::ifstream initFile, transFile;
+	open_file(initFileName, initFile);
+	open_file(transFileName, transFile);
 
-
-
-STMInputHelper::STMInputHelper(const std::string & parFileName, 
-		const std::string & transFileName) : paramData(parFileName.c_str()),
-		transitionData(transFileName.c_str())
-{
-	// make sure all input data is present
-	// if not, display some documentation and then raise an exception
+	// get the column names from the first line of the CSVs and figure out their order
+	std::vector<std::string> initNames, transNames;
+	get_next_line(initFile, initNames, delim);
+	get_next_line(transFile, transNames, delim);
+	initColIndices = get_col_numbers(initNames);
+	transColIndices = get_col_numbers(transNames);
+	
+	// read the rest of the data into appropriate objects
 	try {
-		const std::vector<std::string> & testNames = parameter_names();
-		const std::vector<STMParameters::STMParameterValueType> & testVals = intial_values();
-		const std::vector<double> & testMean = prior_mean();
-		const std::vector<double> & testSD = prior_sd();		
+		read_inits(initFile, delim);
 	}
 	catch (std::out_of_range &e) {
 		display_parameter_help();
 		throw STMInputError();
 	}
+	
 	try {
-		const std::vector<std::string> & testInitState = initial_state();
-		const std::vector<std::string> & testFinalState = final_state();
-		const std::vector<double> & testEnv1 = env_1();
-		const std::vector<double> & testEnv2 = env_2();
-		const std::vector<std::map<std::string, double> > & testExpected = expected_probs();
-		const std::vector<int> & testInterval = tr_interval();
+		read_transitions(transFile, delim);
 	}
 	catch (std::out_of_range &e) {
 		display_transition_help();
 		throw STMInputError();
 	}
+
+	initFile.close();
+	transFile.close();
 }
 
 
 std::vector<STMParameters::ParameterSettings> STMInputHelper::parameter_inits()
+{ return initialValues; }
+
+
+std::map<std::string, STMLikelihood::PriorDist> STMInputHelper::priors()
+{ return priorDists; }
+
+
+std::vector<STMLikelihood::Transition> STMInputHelper::transitions()
+{ return trans; }
+
+
+
+std::map<std::string, int> STMInputHelper::get_col_numbers(std::vector<std::string> cNames)
 {
-	std::vector<double> variance;
-	bool setVariance = true;
-	try {
-		variance = parameter_variance();
-	}
-	catch (std::out_of_range &e) {
-		setVariance = false;
-	}
-	std::vector<STMParameters::ParameterSettings> result;
-	std::vector<std::string> parNames = parameter_names();
-	std::vector<STMParameters::STMParameterValueType> parVals = intial_values();
-	for(int i = 0; i < parNames.size(); i++) {
-		STMParameters::ParameterSettings ps (parNames[i], parVals[i]);
-		if(setVariance)
-			ps.variance = variance[i];
-		result.push_back(ps);
-	}
+	std::map<std::string, int> result;
+	for(int i = 0; i < cNames.size(); ++i)
+		result[cNames[i]] = i;
 	return(result);
 }
 
 
-std::vector<STMLikelihood::Transition> transitions()
+std::ifstream STMInputHelper::open_file(const char * filename, std::ifstream & file) const
 {
-	std::vector<STMLikelihood::Transition> result;
-	std::vector<char> initial = initial_state();
-	for(int i = 0; i < initial.size(); ++i)
-	{
-	
+	file.open(filename);
+	if(!file.is_open()) {
+		std::stringstream err;
+		err << "Failed to open file <" << filename << ">\n";
+		throw std::runtime_error(err.str());
 	}
 }
-/*
-struct Transition {
-	char initial, final;
-	double env1, env2;
-	std::map<char, double> expected;
-	int interval;
-};
-*/
 
 
-const std::vector<std::string> & STMInputHelper::parameter_names()
+int STMInputHelper::get_next_line(std::ifstream &file, std::vector<std::string> &dest, char delim) const
 {
-	if(parNames.empty())
-		parNames = paramData.column<std::string>("name");
-	return parNames;
+	std::string line;
+	if(!std::getline(file, line))
+		return 0;
+	std::vector<std::string> result = split_line(line, delim);
+	dest.clear();
+	dest.insert(dest.begin(), result.begin(), result.end());
+	return 1;
 }
 
 
-const std::vector<STMParameters::STMParameterValueType> & STMInputHelper::intial_values()
+void STMInputHelper::read_inits(std::ifstream &file, char delim)
 {
-	if(initVals.empty())
-		initVals = paramData.column<STMParameters::STMParameterValueType>("initialValue");
-	return initVals;
-}
-
-
-const std::vector<double> & STMInputHelper::parameter_variance()
-{
-	if(parVariance.empty())
-		parVariance = paramData.column<double>("samplerVariance");
-	return parVariance;
-}
-
-
-const std::vector<double> & STMInputHelper::prior_mean()
-{
-	if(priorMean.empty())
-		priorMean = paramData.column<double>("priorMean");
-	return priorMean;
-}
-
-
-const std::vector<double> & STMInputHelper::prior_sd()
-{
-	if(priorSD.empty())
-		priorSD = paramData.column<double>("priorSD");
-	return priorSD;
-}
-
-
-const std::vector<double> & STMInputHelper::env_1()
-{
-	if(env1.empty())
-		env1 = paramData.column<double>("env1");
-	return env1;
-}
-
-
-const std::vector<double> & STMInputHelper::env_2()
-{
-	if(env2.empty())
-		env2 = paramData.column<double>("env2");
-	return env2;
-}
-
-
-const std::vector<std::map<std::string, double> > & STMInputHelper::expected_probs()
-{
-	if(expectedProbs.empty()) {
-		std::vector<double> B = paramData.column<double>("expectedB");
-		std::vector<double> M = paramData.column<double>("expectedM");
-		std::vector<double> T = paramData.column<double>("expectedT");
-		std::vector<double> R = paramData.column<double>("expectedR");
-		for(int i = 0; i < B.size(); ++i) {
-			std::map<std::string, double> newRow;
-			newRow["B"] = B.at(i);
-			newRow["M"] = M.at(i);
-			newRow["T"] = T.at(i);
-			newRow["R"] = R.at(i);
-			expectedProbs.push_back(newRow);
+	std::vector<std::string> line;
+	while(get_next_line(file, line, delim)) {
+		std::string parname = line.at(initColIndices.at("name"));
+		STMParameters::STMParameterValueType init = 
+				str_convert<STMParameters::STMParameterValueType>(line.at(
+				initColIndices.at("initialValue")));
+		bool setVariance = true;
+		double variance;
+		try {
+			variance = str_convert<double>(line.at(initColIndices.at("samplerVariance")));
 		}
+		catch (std::out_of_range &e) {
+			setVariance = false;
+		}
+		STMParameters::ParameterSettings newParam;
+		if(setVariance)
+			newParam = STMParameters::ParameterSettings(parname, init, variance);
+		else
+			newParam = STMParameters::ParameterSettings(parname, init);
+		
+		initialValues.push_back(newParam);
+		
+		double mean = str_convert<double>(line.at(initColIndices.at("priorMean")));
+		double sd = str_convert<double>(line.at(initColIndices.at("priorSD")));
+		priorDists[parname] = STMLikelihood::PriorDist (mean, sd);
 	}
-	return expectedProbs;
 }
 
-const std::vector<int> & STMInputHelper::tr_interval()
-{
-	if(trInterval.empty())
-		trInterval = paramData.column<int>("interval");
-	return trInterval;
-}
-
-
-const std::vector<std::string> & STMInputHelper::final_state()
-{
-	if(finalState.empty())
-		finalState = paramData.column<std::string>("final");
-	return finalState;
-}
-
-
-const std::vector<std::string> & STMInputHelper::initial_state()
-{
-	if(initialState.empty())
-		initialState = paramData.column<std::string>("initial");
-	return initialState;
-}
 
 void STMInputHelper::display_parameter_help() const
 {
@@ -223,35 +149,26 @@ void STMInputHelper::display_transition_help() const
 }
 
 
-CSV::CSV (const char * filename, char delim)
+void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 {
-	// parse the input file
-	std::ifstream inputFile;
-	inputFile.open(filename);
-	if(!inputFile.is_open()) {
-		std::stringstream err;
-		err << "Failed to open file <" << filename << ">\n";
-		throw std::runtime_error(err.str());
+	std::vector<std::string> line;
+	while(get_next_line(file, line, delim)) {
+		STMLikelihood::Transition newTrans;
+		newTrans.initial = str_convert<char>(line.at(initColIndices.at("initial")));
+		newTrans.final = str_convert<char>(line.at(initColIndices.at("initial")));
+		newTrans.env1 = str_convert<double>(line.at(initColIndices.at("env1")));
+		newTrans.env2 = str_convert<double>(line.at(initColIndices.at("env2")));
+		newTrans.interval = str_convert<int>(line.at(initColIndices.at("interval")));
+		newTrans.expected['B'] = str_convert<double>(line.at(initColIndices.at("expectedB")));
+		newTrans.expected['T'] = str_convert<double>(line.at(initColIndices.at("expectedT")));
+		newTrans.expected['R'] = str_convert<double>(line.at(initColIndices.at("expectedR")));
+		newTrans.expected['M'] = str_convert<double>(line.at(initColIndices.at("expectedM")));
+		
+		trans.push_back(newTrans);
 	}
-
-	// get the parameter names from the first line of the CSV
-	std::string line;
-	std::getline(inputFile, line);
-	std::vector<std::string> header = split_line(line, delim);
-	for(const auto & name : header)
-		dat[name] = RawCSVColumn();
-
-	// add data to the columns one row at a time
-	while(std::getline(inputFile, line)) {
-		std::vector<std::string> row = split_line(line, delim);
-		for(int i = 0; i < row.size(); i++)
-			dat.at(header.at(i)).push_back(row[i]);
-	}
-
-	inputFile.close();
 }
 
-std::vector<std::string> CSV::split_line(const std::string & str, char delim) const
+std::vector<std::string> STMInputHelper::split_line(const std::string & str, char delim) const
 {
     std::stringstream lineStream(str);
     std::string cell;
@@ -260,8 +177,5 @@ std::vector<std::string> CSV::split_line(const std::string & str, char delim) co
         result.push_back(cell);
     return result;
 }
-
-
-
 
 } // namespace STMInput

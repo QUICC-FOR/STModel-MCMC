@@ -22,6 +22,7 @@ STModel-MCMC : parameters.cpp
 
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
 #include "../hdr/parameters.hpp"
 
 namespace STMParameters
