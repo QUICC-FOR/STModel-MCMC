@@ -77,9 +77,11 @@ class STModelParameters
 		uses environmental conditions (passed as parameters) along with the model
 		parameters (stored internally) to generate the transition rates
 	*/
-	TransitionRates generate_rates(double env1, double env2, int interval,
-			double borealExpected) const;
-
+	TransitionRates generate_rates(double env1, double env2, int interval) const;
+	/* borealExpected version
+		TransitionRates generate_rates(double env1, double env2, int interval,
+				double borealExpected) const;
+	*/
 
 	/*
 		Access to the state (i.e., the vector of parameters) is provided by a single

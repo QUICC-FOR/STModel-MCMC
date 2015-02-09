@@ -23,6 +23,7 @@ STModel-MCMC : parameters.cpp
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+
 #include "../hdr/parameters.hpp"
 
 namespace STMParameters
@@ -53,8 +54,11 @@ STModelParameters::STModelParameters(const std::vector<ParameterSettings> & init
 }
 
 
+/* borealExpected version
 TransitionRates STModelParameters::generate_rates(double env1, double env2, int interval,
 		double borealExpected) const
+*/
+TransitionRates STModelParameters::generate_rates(double env1, double env2, int interval) const
 {
 	const STMParameterMap & p = parameterValues;	// to shorten the name
 	STMParameterValueType alpha_b_logit, alpha_t_logit, beta_b_logit, beta_t_logit, 
@@ -86,8 +90,13 @@ TransitionRates STModelParameters::generate_rates(double env1, double env2, int 
 
 	epsilon_logit = p.at("e0") + p.at("e1")*env1 + p.at("e2")*env2 + 
 			p.at("e3")*pow(env1,2) + p.at("e4")*pow(env2,2) + p.at("e5")*pow(env1,3) + 
-			p.at("e6")*pow(env2,3) + p.at("e7")*borealExpected;
+			p.at("e6")*pow(env2,3);
 
+/* borealExpected version
+	epsilon_logit = p.at("e0") + p.at("e1")*env1 + p.at("e2")*env2 + 
+			p.at("e3")*pow(env1,2) + p.at("e4")*pow(env2,2) + p.at("e5")*pow(env1,3) + 
+			p.at("e6")*pow(env2,3) + p.at("e7")*borealExpected;
+*/
 
 	STMParameterValueType alpha_b = make_annual(alpha_b_logit, interval);
 	STMParameterValueType alpha_t = make_annual(alpha_t_logit, interval);
