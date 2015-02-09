@@ -14,7 +14,7 @@ int main(int argc, char ** argv)
 	const char * parFileName = "inp/inits.txt";
 	const char * transFileName = "inp/trans.txt";
 	
-	// handle input data -- will need to write the code to get these from disk
+	// handle input data
 	std::vector<STMParameters::ParameterSettings> inits;
 	std::vector<STMLikelihood::Transition> transitionData;
 	std::map<std::string, STMLikelihood::PriorDist> priors;
