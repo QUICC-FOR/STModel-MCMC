@@ -1,5 +1,5 @@
-#include "hdr/parameters.hpp"
-#include "hdr/input.hpp"
+#include "../hdr/parameters.hpp"
+#include "../hdr/input.hpp"
 #include <iostream>
 
 

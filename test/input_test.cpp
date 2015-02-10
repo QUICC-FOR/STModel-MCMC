@@ -1,6 +1,6 @@
-#include "hdr/parameters.hpp"
-#include "hdr/likelihood.hpp"
-#include "hdr/input.hpp"
+#include "../hdr/parameters.hpp"
+#include "../hdr/likelihood.hpp"
+#include "../hdr/input.hpp"
 #include <iostream>
 int main(void)
 {

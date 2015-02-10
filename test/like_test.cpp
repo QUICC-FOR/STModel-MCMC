@@ -1,6 +1,6 @@
-// be sure this is long enough to test openmp
-#include "hdr/likelihood.hpp"
-#include "hdr/input.hpp"
+#include "../hdr/parameters.hpp"
+#include "../hdr/likelihood.hpp"
+#include "../hdr/input.hpp"
 #include <iostream>
 
 
