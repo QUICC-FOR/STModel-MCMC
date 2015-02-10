@@ -41,14 +41,12 @@ std::vector<double> STModelParameters::targetAcceptanceInterval {0.27, 0.34};
 STModelParameters::STModelParameters(const std::vector<ParameterSettings> & initPars)
 {
 	for(const ParameterSettings & par : initPars) {
-		if(parSettings.count(par.name) > 0 || 
-				std::find(parNames.begin(), parNames.end(), par.name) != parNames.end())
-			throw std::runtime_error(
-					"STModelParameters: duplicate parameter passed in constructor");
-		else {
+
+		if(parSettings.count(par.name) == 0)
 			parSettings[par.name] = par;
+
+		if(std::find(parNames.begin(), parNames.end(), par.name) == parNames.end())
 			parNames.push_back(par.name);
-		}
 	}
 	reset();
 }
