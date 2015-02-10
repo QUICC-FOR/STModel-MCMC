@@ -20,13 +20,6 @@ int main(void)
 	for(auto par : inits)
 		std::cerr << par.name << ": " << par.initialValue << "\n";
 	
-	struct Transition {
-	char initial, final;
-	double env1, env2;
-	std::map<char, double> expected;
-	int interval;
-};
-
 	std::cerr << "\nTransitions:\n";
 	for(auto tr : transitionData) {
 		std::cerr << tr.initial << " -> " << tr.final << " : " << tr.interval << " yr : " << tr.env1 << " " << tr.env2 << "\n";
