@@ -19,12 +19,20 @@ namespace STMLikelihood {
 
 namespace STMEngine {
 
+enum class EngineOutputLevel {
+	Quiet,			// print nothing
+	Normal,			// only print status messages
+	Verbose,		// prints the likelihood at each iteration
+	ExtraVerbose	// prints parameter values at each iteration
+};
+
 class Metropolis
 {
 	public:
 	Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 			STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * 
-			const lhood, bool rngSetSeed = false, int rngSeed = 0);
+			const lhood, EngineOutputLevel outLevel = EngineOutputLevel::Normal, 
+			bool rngSetSeed = false, int rngSeed = 0);
 	Metropolis(const Metropolis & m);
 	Metropolis & operator= (const Metropolis &m);
 	~Metropolis();
@@ -49,6 +57,7 @@ class Metropolis
 	STMParameters::STModelParameters parameters;
 	std::vector<STMParameters::STMParameterMap> currentSamples;
 	gsl_rng * rng;
+	double currentPosteriorProb;
 
 	// settings
 	int outputBufferSize;
@@ -56,6 +65,7 @@ class Metropolis
 	double adaptationRate;
 	bool rngSetSeed;
 	int rngSeed;
+	EngineOutputLevel outputLevel;
 };
 
 } // namespace

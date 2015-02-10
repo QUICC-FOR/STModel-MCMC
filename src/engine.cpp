@@ -6,6 +6,8 @@
 #include <string>
 #include <cmath>
 #include <algorithm> // std::random_shuffle
+#include <iostream>
+#include <iomanip>
 
 using std::vector;
 
@@ -17,12 +19,13 @@ namespace STMEngine {
 
 Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood,
-		bool rngSetSeed, int rngSeed) :
+		EngineOutputLevel outLevel, bool rngSetSeed, int rngSeed) :
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 
 // objects that we own
-parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), rng(NULL),
+parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), rng(NULL), 
+outputLevel(outLevel),
 
 // the parameters below have default values with no support for changing them
 outputBufferSize(50000), adaptationSampleSize(10000), adaptationRate(1.1)
@@ -79,14 +82,16 @@ void Metropolis::run_sampler(int n)
 		outputQueue->push(buffer);	// note that this may block if the queue is busy
 		numCompleted += sampleSize;
 		
-		/* if desired: some output with the current time 
-		time_t rawtime;
-		time(&rawtime);
-		struct tm * timeinfo = localtime(&rawtime);
-		char fmtTime [20];
-		strftime(fmtTime, 20, "%F %T", timeinfo);
-		cerr << fmtTime << "   MCMC Iteration " << samplesTaken << "; current job completed " << numCompleted << " of " << n << '\n';
-		*/
+		/* if desired: some output with the current time */
+		if(outputLevel >= EngineOutputLevel::Normal) {
+			time_t rawtime;
+			time(&rawtime);
+			struct tm * timeinfo = localtime(&rawtime);
+			char fmtTime [20];
+			strftime(fmtTime, 20, "%F %T", timeinfo);
+			std::cerr << fmtTime << "   MCMC Iteration " << numCompleted << " of " 
+					<< n << '\n';
+		}
 	}
 }
 
@@ -141,11 +146,30 @@ std::map<STMParameters::STMParameterNameType, double> Metropolis::do_sample(int 
 		parameters.increment();
 		currentSamples.push_back(parameters.current_state());
 
-//		if desired, some debugging output	
-// 		#ifdef SAMPLER_DEBUG
-// 			if(verbose > 1)
-// 				cerr << vec_to_str(currentState) << '\n';
-// 		#endif
+		//		if desired, some debugging output
+		if(outputLevel >= EngineOutputLevel::Verbose) {
+			std::cerr << "  iteration " << parameters.iteration() - 1 << 
+					"    posterior probability: " << currentPosteriorProb << "\n";
+			if(outputLevel >= EngineOutputLevel::ExtraVerbose) {
+			std::ios_base::fmtflags oldflags = std::cerr.flags();
+				std::streamsize oldprecision = std::cerr.precision();
+
+				std::cerr << std::fixed << std::setprecision(3) << " ";
+				STMParameters::STMParameterMap st = parameters.current_state();
+				int coln = 0;
+				for(auto pa : st) {
+					std::cerr << std::setw(6) << pa.first << std::setw(8) << pa.second;
+					if(++coln >= 7) {
+						std::cerr << "\n ";
+						coln = 0;
+					}
+				}
+				std::cerr << "\n";
+			
+				std::cerr.flags (oldflags);
+				std::cerr.precision (oldprecision);
+			}
+		}
 }
 
 	std::map<STMParameters::STMParameterNameType, double> acceptanceRates;
@@ -169,14 +193,18 @@ int Metropolis::select_parameter(const STMParameters::STMParameterPair & p)
 	STMParameters::STModelParameters proposal (parameters);
 	proposal.update(p);
 	
-	double acceptanceProb = exp(log_posterior_prob(proposal, p) - 
-			log_posterior_prob(parameters, parameters.at(p.first)));
+	double proposalLogPosterior = log_posterior_prob(proposal, p);
+	double previousLogPosterior = log_posterior_prob(parameters, parameters.at(p.first));
+	double acceptanceProb = exp(proposalLogPosterior - previousLogPosterior);
 	double testVal = gsl_rng_uniform(rng);
 	if(testVal < acceptanceProb) {
+		currentPosteriorProb = proposalLogPosterior;
 		parameters.update(p);
 		return 1;
-	} else
+	} else {
+		currentPosteriorProb = previousLogPosterior;
 		return 0;
+	}
 }
 
 
