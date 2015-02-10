@@ -139,8 +139,8 @@ bool STModelParameters::adapted() const
 	int count = 0;
 	for(const auto & p : names())
 		count += std::abs(not_adapted(p));
-	if(count > 0) return true;
-	else return false;
+	if(count > 0) return false;
+	else return true;
 }
 
 
