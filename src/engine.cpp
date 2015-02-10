@@ -23,49 +23,23 @@ Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & ini
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 
-// objects that we own
-parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), rng(NULL), 
-outputLevel(outLevel),
+// objects that we own or share
+parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), 
+rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel),
 
 // the parameters below have default values with no support for changing them
 outputBufferSize(50000), adaptationSampleSize(10000), adaptationRate(1.1)
 {
+
 	// check pointers
 	if(!queue || !lhood)
 		throw std::runtime_error("Metropolis: passed null pointer on construction");
 }
 
 
-Metropolis::Metropolis(const Metropolis & m) : outputQueue(m.outputQueue), 
-		likelihood(m.likelihood), parameters(m.parameters), 
-		currentSamples(m.currentSamples), outputBufferSize(m.outputBufferSize), 
-		adaptationSampleSize(m.adaptationSampleSize), adaptationRate(m.adaptationRate), 
-		rngSetSeed(m.rngSetSeed), rngSeed(m.rngSeed)
-{ if(m.rng) gsl_rng_memcpy(rng, m.rng); }
-
-Metropolis & Metropolis::operator= (const Metropolis &m)
-{
-	outputQueue = m.outputQueue; 
-	likelihood = m.likelihood;
-	parameters = m.parameters;
-	currentSamples = m.currentSamples;
-	outputBufferSize = m.outputBufferSize;
-	adaptationSampleSize = m.adaptationSampleSize;
-	adaptationRate = m.adaptationRate;
-	rngSetSeed = m.rngSetSeed;
-	rngSeed = m.rngSeed;
-	if(m.rng) gsl_rng_memcpy(rng, m.rng);
-}
-
-
-
-Metropolis::~Metropolis()
-{ if(rng) gsl_rng_free(rng); }
-
 void Metropolis::run_sampler(int n)
 {
-	if(!rng)
-		set_up_rng();
+	set_up_rng();
 	
 	if(!parameters.adapted())
 		auto_adapt();
@@ -131,7 +105,7 @@ std::map<STMParameters::STMParameterNameType, double> Metropolis::do_sample(int 
 	// 	shuffle the order of parameters
 	std::vector<STMParameters::STMParameterNameType> parNames (parameters.names());
 	std::random_shuffle(parNames.begin(), parNames.end(), 
-			[this](int n){ return gsl_rng_uniform_int(rng, n); });
+			[this](int n){ return gsl_rng_uniform_int(rng.get(), n); });
 	
 	std::map<STMParameters::STMParameterNameType, int> numAccepted;
 	for(const auto & par : parNames)
@@ -183,7 +157,7 @@ STMParameters::STMParameterPair Metropolis::propose_parameter(const
 		STMParameters::STMParameterNameType & par) const
 {
 	return STMParameters::STMParameterPair (par, parameters.current_state().at(par) + 
-			gsl_ran_gaussian(rng, parameters.sampler_variance(par)));
+			gsl_ran_gaussian(rng.get(), parameters.sampler_variance(par)));
 }
 
 
@@ -196,7 +170,7 @@ int Metropolis::select_parameter(const STMParameters::STMParameterPair & p)
 	double proposalLogPosterior = log_posterior_prob(proposal, p);
 	double previousLogPosterior = log_posterior_prob(parameters, parameters.at(p.first));
 	double acceptanceProb = exp(proposalLogPosterior - previousLogPosterior);
-	double testVal = gsl_rng_uniform(rng);
+	double testVal = gsl_rng_uniform(rng.get());
 	if(testVal < acceptanceProb) {
 		currentPosteriorProb = proposalLogPosterior;
 		parameters.update(p);
@@ -215,9 +189,7 @@ double Metropolis::log_posterior_prob(const STMParameters::STModelParameters & p
 
 void Metropolis::set_up_rng()
 {
-	rng = gsl_rng_alloc(gsl_rng_mt19937);
-	assert(rng);
 	int seed = (rngSetSeed ? rngSeed : (int) time(NULL));
-	gsl_rng_set(rng, seed);
+	gsl_rng_set(rng.get(), seed);
 }
 } // namespace
