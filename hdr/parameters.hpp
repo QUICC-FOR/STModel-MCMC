@@ -156,12 +156,13 @@ class STModelParameters
 		reset() sets the parameter object to its initial state and returns the iteration 
 			counter to 0
 		increment(int n) increases the iteration counter by n (default of 1)
+		iteration() returns the iteration count
 	*/
 	size_t size() const;
 	const std::vector<STMParameterNameType> & names() const;
 	void reset();
 	void increment(int n = 1);
-
+	int iteration() const;
 		
 	private:
 	STMParameterValueType make_annual(STMParameterValueType logit_val, int interval) const;

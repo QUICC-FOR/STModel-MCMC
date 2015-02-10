@@ -168,6 +168,10 @@ void STModelParameters::increment(int n)
 { iterationCount += n; }
 
 
+int STModelParameters::iteration() const
+{ return iterationCount; }
+
+
 const STMParameterMap & STModelParameters::current_state() const
 { return parameterValues; }
 
