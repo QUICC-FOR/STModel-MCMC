@@ -28,7 +28,7 @@ parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed),
 rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel),
 
 // the parameters below have default values with no support for changing them
-outputBufferSize(50000), adaptationSampleSize(10000), adaptationRate(1.1)
+outputBufferSize(10000), adaptationSampleSize(10000), adaptationRate(1.1)
 {
 
 	// check pointers

@@ -11,7 +11,6 @@ int main(void)
 	const char * transFileName = "inp/trans_short.txt";
 	int maxIterations = 100;
 
-int ln = 0;
 	std::vector<STMParameters::ParameterSettings> inits;
 	std::vector<STMLikelihood::Transition> transitionData;
 	std::map<std::string, STMLikelihood::PriorDist> priors;
