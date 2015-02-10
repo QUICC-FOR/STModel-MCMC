@@ -31,6 +31,7 @@
 */
 
 #include <cmath>
+#include <algorithm>
 #include <gsl/gsl_randist.h>
 #include "../hdr/likelihood.hpp"
 #include "../hdr/parameters.hpp"
@@ -46,6 +47,10 @@ Likelihood::Likelihood(const std::vector<Transition> & transitionData,
 		const std::map<std::string, PriorDist> & pr) : transitions(transitionData), 
 		priors(pr)
 {
+	// check for and remove disallowed transitions
+	transitions.erase(std::remove_if(transitions.begin(), transitions.end(), 
+			Transition::invalid_transition), transitions.end());
+
 
 	/* 
 		set up the map of functions to the likelihood expressions
@@ -120,7 +125,6 @@ Likelihood::Likelihood(const std::vector<Transition> & transitionData,
 
 }
 
-
 double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters & params)
 {
 	double sumlogl = 0;
@@ -128,19 +132,23 @@ double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters
 	#pragma omp parallel num_threads(S_NUM_THREADS)
 	{
 	#pragma omp for reduction(+:sumlogl)
-	for(int i = 0; i < transitions.size(); i++)
-	{
-		Transition dat = transitions.at(i);
-		double lik;
-		STMParameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2, 
-				dat.interval, dat.expected['B']);
-		lik = lhood[dat.initial][dat.final](rates, dat.expected);
+		for(int i = 0; i < transitions.size(); i++)
+		{
+			Transition dat = transitions.at(i);
+			double lik;
+			/* borealExpected version
+			STMParameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2, 
+					dat.interval, dat.expected['B']);
+			*/
+			STMParameters::TransitionRates rates = params.generate_rates(dat.env1, dat.env2, 
+					dat.interval);
+			lik = lhood[dat.initial][dat.final](rates, dat.expected);
 		
-		// likelihood might be zero or negative (due to subtracting probabilities)
-		if(lik <= 0) lik = std::nextafter(0,1);
+			// likelihood might be zero or negative (due to subtracting probabilities)
+			if(lik <= 0) lik = std::nextafter(0,1);
 		
-		sumlogl += std::log(lik);
-	} // ! for i
+			sumlogl += std::log(lik);
+		} // ! for i
 	} // !parallel for
 	
 	return sumlogl;

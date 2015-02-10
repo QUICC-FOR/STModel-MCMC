@@ -51,6 +51,13 @@ struct Transition {
 	double env1, env2;
 	std::map<char, double> expected;
 	int interval;
+	
+	/*
+		returns true if the transition is invalid
+	*/
+	static bool invalid_transition(Transition t)
+		{ return( (t.initial == 'B' && t.final == 'T') || (t.initial == 'T' && 
+				t.final == 'B')); }
 };
 
 

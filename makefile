@@ -38,8 +38,15 @@ bin/input.o: src/input.cpp hdr/input.hpp hdr/parameters.hpp
 
 # TESTS
 
-test: test/bin/param_test
-	./test/bin/param_test
+test: test/bin/like_test
+	./test/bin/like_test
+	
+test/bin/like_test: test/bin/like_test.o bin/input.o bin/likelihood.o bin/parameters.o
+	$(CC) $(CO) -o test/bin/like_test test/bin/like_test.o bin/likelihood.o bin/input.o \
+	bin/parameters.o $(GSL)
+	
+test/bin/like_test.o: test/like_test.cpp hdr/likelihood.hpp hdr/input.hpp
+	$(CC) $(CO) -c -o test/bin/like_test.o test/like_test.cpp
 
 test/bin/param_test: test/bin/param_test.o bin/input.o bin/parameters.o
 	$(CC) $(CO) -o test/bin/param_test test/bin/param_test.o bin/parameters.o bin/input.o
@@ -51,7 +58,8 @@ test/bin/input_test: test/bin/input_test.o bin/parameters.o bin/likelihood.o bin
 	$(CC) $(CO) -o test/bin/input_test test/bin/input_test.o bin/parameters.o \
 	bin/likelihood.o bin/input.o $(GSL)
 
-test/bin/input_test.o: test/input_test.cpp hdr/parameters.hpp hdr/likelihood.hpp hdr/input.hpp
+test/bin/input_test.o: test/input_test.cpp hdr/parameters.hpp hdr/likelihood.hpp \
+hdr/input.hpp
 	mkdir -p test/bin
 	$(CC) $(CO) -c -o test/bin/input_test.o test/input_test.cpp	
 
@@ -61,6 +69,7 @@ test/bin/output_test: test/output_test.cpp src/output.cpp hdr/output.hpp
 
 
 # tests not run by default
-io_test: test/bin/input_test test/bin/output_test
+io_test: test/bin/input_test test/bin/output_test test/bin/param_test
 	./test/bin/input_test
 	./test/bin/output_test
+	./test/bin/param_test
