@@ -38,14 +38,24 @@ bin/input.o: src/input.cpp hdr/input.hpp hdr/parameters.hpp
 
 # TESTS
 
-test: test/bin/like_test
-	./test/bin/like_test
+test: test/bin/engine_test
+	./test/bin/engine_test
 	
+test/bin/engine_test: test/bin/engine_test.o bin/engine.o bin/input.o bin/likelihood.o \
+bin/parameters.o bin/output.o
+	$(CC) $(CO) $(GSL) -o test/bin/engine_test test/bin/engine_test.o bin/engine.o \
+	bin/likelihood.o bin/input.o bin/parameters.o bin/output.o
+	
+test/bin/engine_test.o: test/engine_test.cpp hdr/engine.hpp hdr/likelihood.hpp \
+hdr/input.hpp hdr/parameters.hpp hdr/output.hpp
+	$(CC) $(CO) -c -o test/bin/engine_test.o test/engine_test.cpp
+
 test/bin/like_test: test/bin/like_test.o bin/input.o bin/likelihood.o bin/parameters.o
 	$(CC) $(CO) -o test/bin/like_test test/bin/like_test.o bin/likelihood.o bin/input.o \
 	bin/parameters.o $(GSL)
 	
-test/bin/like_test.o: test/like_test.cpp hdr/likelihood.hpp hdr/input.hpp
+test/bin/like_test.o: test/like_test.cpp hdr/likelihood.hpp hdr/input.hpp \
+hdr/parameters.hpp 
 	$(CC) $(CO) -c -o test/bin/like_test.o test/like_test.cpp
 
 test/bin/param_test: test/bin/param_test.o bin/input.o bin/parameters.o
@@ -69,7 +79,7 @@ test/bin/output_test: test/output_test.cpp src/output.cpp hdr/output.hpp
 
 
 # tests not run by default
-io_test: test/bin/input_test test/bin/output_test test/bin/param_test
+done_tests: test/bin/input_test test/bin/param_test test/bin/like_test
 	./test/bin/input_test
-	./test/bin/output_test
 	./test/bin/param_test
+	./test/bin/like_test
