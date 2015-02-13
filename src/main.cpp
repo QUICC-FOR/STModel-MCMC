@@ -15,9 +15,10 @@ struct ModelSettings
 	const char * parFileName;
 	const char * transFileName;
 	int maxIterations;
+	STMEngine::EngineOutputLevel verbose;
 	
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
-			maxIterations(100) {}
+			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal) {}
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -54,7 +55,8 @@ int main(int argc, char ** argv)
 	// spawn engine and outputworker in threads
 	bool engineFinished = false;
 	std::thread engineThread (&STMEngine::Metropolis::run_sampler, 
-			STMEngine::Metropolis(inits, outQueue, likelihood), settings.maxIterations);
+			STMEngine::Metropolis(inits, outQueue, likelihood, settings.verbose), 
+			settings.maxIterations);
 	std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 			STMOutput::OutputWorkerThread(outQueue, &engineFinished));
 	
@@ -77,7 +79,7 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hp:t:i:")) != -1)
+	while((thearg = getopt(argc, argv, "hp:t:i:v:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -93,6 +95,9 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 			case 'i':
 				s.maxIterations = atoi(optarg);
 				break;
+			case 'v':
+				s.verbose = STMEngine::EngineOutputLevel(atoi(optarg));
+				break;
 			case '?':
 				print_help();
 				break;
@@ -107,5 +112,11 @@ void print_help()
 	std::cerr << "    -p <filname>:   specifies the location of the parameter information file\n";
 	std::cerr << "    -t <filname>:   specifies the location of the transition data\n";
 	std::cerr << "    -i <integer>:   specifies the number of mcmc iterations (after adaptation)\n";
+	std::cerr << "    -v <integer>:   set verbosity; control level of output as follows:\n";	
+	std::cerr << "                         0: Quiet; print nothing\n";	
+	std::cerr << "                         1: Normal; only print status messages\n";	
+	std::cerr << "                         2: Talkative; prints acceptance rates during adaptation\n";	
+	std::cerr << "                         3: Verbose; prints the likelihood at each iteration\n";	
+	std::cerr << "                         4: Extra Verbose; prints parameter values at each iteration\n";	
 	exit(1);
 }

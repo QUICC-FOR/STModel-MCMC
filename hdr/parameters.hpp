@@ -140,11 +140,14 @@ class STModelParameters
 		
 		adapted()
 		returns true if all parameters are adapted
+		
+		str_acceptance_rates: output acceptance rates as a formatted string for logging
 	*/
 	void set_acceptance_rates(const std::map<STMParameterNameType, double> & rates);
 	void set_acceptance_rate(const STMParameterNameType & par, double rate);
 	int not_adapted(const STMParameterNameType & par) const;
 	bool adapted() const;
+	std::string str_acceptance_rates() const;
 
 	/*
 		Utility functions

@@ -21,10 +21,11 @@ namespace STMLikelihood {
 namespace STMEngine {
 
 enum class EngineOutputLevel {
-	Quiet,			// print nothing
-	Normal,			// only print status messages
-	Verbose,		// prints the likelihood at each iteration
-	ExtraVerbose	// prints parameter values at each iteration
+	Quiet=0,			// print nothing
+	Normal=1,			// only print status messages
+	Talkative=2,		// acceptance rates during adaptation
+	Verbose=3,			// prints the likelihood at each iteration
+	ExtraVerbose=4		// prints parameter values at each iteration
 };
 
 class Metropolis

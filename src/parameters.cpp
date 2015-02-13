@@ -23,6 +23,7 @@ STModel-MCMC : parameters.cpp
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <sstream>
 
 #include "../hdr/parameters.hpp"
 
@@ -122,6 +123,18 @@ void STModelParameters::set_acceptance_rates(const std::map<STMParameterNameType
 
 void STModelParameters::set_acceptance_rate(const STMParameterNameType & par, double rate)
 { parSettings.at(par).acceptanceRate = rate; }
+
+
+std::string STModelParameters::str_acceptance_rates() const
+{
+	std::stringstream res;
+	res.precision(3);
+	res << "[ ";
+	for(const auto ps: parSettings)
+		res << ps.second.acceptanceRate << " ";
+	res << "]";
+	return res.str();
+}
 
 
 int STModelParameters::not_adapted(const STMParameterNameType & par) const

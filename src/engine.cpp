@@ -11,6 +11,19 @@
 
 using std::vector;
 
+namespace {
+	std::string timestamp()
+	{
+		time_t rawtime;
+		time(&rawtime);
+		struct tm * timeinfo = localtime(&rawtime);
+		char fmtTime [20];
+		strftime(fmtTime, 20, "%F %T", timeinfo);
+		std::string ts(fmtTime);
+		return ts;		
+	}
+}
+
 namespace STMEngine {
 
 /*
@@ -58,12 +71,7 @@ void Metropolis::run_sampler(int n)
 		
 		/* if desired: some output with the current time */
 		if(outputLevel >= EngineOutputLevel::Normal) {
-			time_t rawtime;
-			time(&rawtime);
-			struct tm * timeinfo = localtime(&rawtime);
-			char fmtTime [20];
-			strftime(fmtTime, 20, "%F %T", timeinfo);
-			std::cerr << fmtTime << "   MCMC Iteration " << numCompleted << " of " 
+			std::cerr << timestamp() << "   MCMC Iteration " << numCompleted << " of " 
 					<< n << '\n';
 		}
 	}
@@ -76,6 +84,9 @@ void Metropolis::run_sampler(int n)
 
 void Metropolis::auto_adapt()
 {
+	if(outputLevel >= EngineOutputLevel::Normal) {
+		std::cerr << timestamp() << " Starting automatic adaptation\n";
+	}
 	std::vector<STMParameters::STMParameterNameType> parNames (parameters.names());		
 	while(!parameters.adapted()) {
 		parameters.set_acceptance_rates(do_sample(adaptationSampleSize));
@@ -93,8 +104,15 @@ void Metropolis::auto_adapt()
 				break;
 			}
 		}
+		if(outputLevel >= EngineOutputLevel::Talkative) {
+			std::cerr << "    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
+			std::cerr << "    " << parameters.str_acceptance_rates() << "\n\n";
+		}
 	}
 	parameters.reset();
+	if(outputLevel >= EngineOutputLevel::Normal) {
+		std::cerr << timestamp() << "Adaptation completed successfully\n";
+	}
 }
 
 
