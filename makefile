@@ -8,6 +8,11 @@ CO=$(CF) -fopenmp
 
 GSL=-lgsl
 
+bin/st_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
+bin/input.o
+	$(CC) $(CO) $(GSL) -o bin/st_mcmc bin/main.o bin/engine.o bin/parameters.o \
+	bin/likelihood.o bin/output.o bin/input.o
+
 bin/main.o: src/main.cpp hdr/engine.hpp hdr/output.hpp hdr/parameters.hpp \
 hdr/likelihood.hpp hdr/input.hpp
 	mkdir -p bin

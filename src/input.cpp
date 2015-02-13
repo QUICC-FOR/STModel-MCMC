@@ -153,6 +153,7 @@ void STMInputHelper::display_transition_help() const
 
 void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 {
+	static bool rTried = false;
 	std::vector<std::string> line;
 	int ln = 1;
 	while(get_next_line(file, line, delim)) {
@@ -166,13 +167,15 @@ void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 		newTrans.expected['B'] = str_convert<double>(line.at(transColIndices.at("expectedB")));
 		newTrans.expected['T'] = str_convert<double>(line.at(transColIndices.at("expectedT")));
 		newTrans.expected['M'] = str_convert<double>(line.at(transColIndices.at("expectedM")));
-		try {
-			newTrans.expected['R'] = str_convert<double>(line.at(transColIndices.at("expectedR")));
+		if(!rTried) {
+			rTried = true;
+			try {
+				newTrans.expected['R'] = str_convert<double>(line.at(transColIndices.at("expectedR")));
+			}
+			catch (std::out_of_range e) {
+				std::cerr << "Warning: missing expectedR field in input data\n";
+			}
 		}
-		catch (std::out_of_range e) {
-			std::cerr << "Warning: missing expectedR field in input data\n";
-		}
-		
 		trans.push_back(newTrans);
 	}
 }

@@ -127,11 +127,43 @@ void STModelParameters::set_acceptance_rate(const STMParameterNameType & par, do
 
 std::string STModelParameters::str_acceptance_rates() const
 {
+	std::string red = "\033[1;31m";
+	std::string cyan = "\033[1;36m";
+	std::string normal = "\033[0m";
 	std::stringstream res;
+	res << std::fixed;
 	res.precision(3);
 	res << "[ ";
-	for(const auto ps: parSettings)
+	for(const auto ps: parSettings) {
+		if(not_adapted(ps.first))
+			res << red;
+		else
+			res << cyan;
 		res << ps.second.acceptanceRate << " ";
+	}
+	res << normal;
+	res << "]";
+	return res.str();
+}
+
+
+std::string STModelParameters::str_sampling_variance() const
+{
+	std::string red = "\033[1;31m";
+	std::string cyan = "\033[1;36m";
+	std::string normal = "\033[0m";
+	std::stringstream res;
+	res << std::fixed;
+	res.precision(3);
+	res << "[ ";
+	for(const auto ps: parSettings) {
+		if(not_adapted(ps.first))
+			res << red;
+		else
+			res << cyan;
+		res << ps.second.variance << " ";
+	}
+	res << normal;
 	res << "]";
 	return res.str();
 }

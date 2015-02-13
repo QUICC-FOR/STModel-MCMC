@@ -142,12 +142,14 @@ class STModelParameters
 		returns true if all parameters are adapted
 		
 		str_acceptance_rates: output acceptance rates as a formatted string for logging
+		std_sampling_variance: same as above, but for the sampling variance
 	*/
 	void set_acceptance_rates(const std::map<STMParameterNameType, double> & rates);
 	void set_acceptance_rate(const STMParameterNameType & par, double rate);
 	int not_adapted(const STMParameterNameType & par) const;
 	bool adapted() const;
 	std::string str_acceptance_rates() const;
+	std::string str_sampling_variance() const;
 
 	/*
 		Utility functions

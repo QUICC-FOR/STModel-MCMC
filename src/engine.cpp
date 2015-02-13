@@ -41,7 +41,7 @@ parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed),
 rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel),
 
 // the parameters below have default values with no support for changing them
-outputBufferSize(10000), adaptationSampleSize(10000), adaptationRate(1.1)
+outputBufferSize(10000), adaptationSampleSize(100), adaptationRate(1.1)
 {
 
 	// check pointers
@@ -105,9 +105,12 @@ void Metropolis::auto_adapt()
 			}
 		}
 		if(outputLevel >= EngineOutputLevel::Talkative) {
-			std::cerr << "    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
-			std::cerr << "    " << parameters.str_acceptance_rates() << "\n\n";
+			std::cerr << "\n    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
+			std::cerr << "    " << parameters.str_acceptance_rates() << "\n";
+			std::cerr << "    sampler variance:\n";
+			std::cerr << "    " << parameters.str_sampling_variance() << "\n";
 		}
+		adaptationSampleSize *= 1.25;
 	}
 	parameters.reset();
 	if(outputLevel >= EngineOutputLevel::Normal) {
