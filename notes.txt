@@ -1,0 +1,19 @@
+DESIGN NOTES
+
+Class Engine:
+	responsible for coordinating all of the pieces
+	
+Class Likelihood:
+	holds the data
+	responsible for computing the likeihood of the model given some parameters
+	
+Class Parameters:
+	holds the model parameters (i.e., the state at one time step)
+	responsible for computing the derived parameters given the raw (regression) parameters
+	has functions for updating the state and proposing new values
+	
+Class InputHelper:
+	responsible for reading data off disk and feeding it to the necessary objects
+	
+Class OutputHelper:
+	does all of the writing to disk, etc

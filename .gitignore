@@ -26,3 +26,12 @@
 *.exe
 *.out
 *.app
+
+# Data
+inp/*
+
+src/ref*
+bin/*
+test/bin/*
+
+*.bbprojectd
