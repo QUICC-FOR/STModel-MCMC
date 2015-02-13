@@ -147,7 +147,7 @@ void STMInputHelper::display_transition_help() const
 	std::cerr << "        expectedB -- the expected probability of the B state\n";
 	std::cerr << "        expectedT -- the expected probability of the T state\n";
 	std::cerr << "        expectedM -- the expected probability of the M state\n";
-	std::cerr << "        expectedR -- the expected probability of the R state\n\n";
+	std::cerr << "        expectedR -- the expected probability of the R state (optional)\n\n";
 }
 
 
@@ -165,8 +165,13 @@ void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 		newTrans.interval = str_convert<int>(line.at(transColIndices.at("interval")));
 		newTrans.expected['B'] = str_convert<double>(line.at(transColIndices.at("expectedB")));
 		newTrans.expected['T'] = str_convert<double>(line.at(transColIndices.at("expectedT")));
-		newTrans.expected['R'] = str_convert<double>(line.at(transColIndices.at("expectedR")));
 		newTrans.expected['M'] = str_convert<double>(line.at(transColIndices.at("expectedM")));
+		try {
+			newTrans.expected['R'] = str_convert<double>(line.at(transColIndices.at("expectedR")));
+		}
+		catch (std::out_of_range e) {
+			std::cerr << "Warning: missing expectedR field in input data\n";
+		}
 		
 		trans.push_back(newTrans);
 	}

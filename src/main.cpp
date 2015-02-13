@@ -1,25 +1,41 @@
 #include <thread>
 #include <vector>
 #include <iostream>
+#include <unistd.h> // for getopt
+#include <cstdlib> // atoi
+
 #include "../hdr/engine.hpp"
 #include "../hdr/output.hpp"
 #include "../hdr/input.hpp"
 #include "../hdr/parameters.hpp"
 #include "../hdr/likelihood.hpp"
 
+struct ModelSettings 
+{
+	const char * parFileName;
+	const char * transFileName;
+	int maxIterations;
+	
+	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
+			maxIterations(100) {}
+};
+
+void parse_args(int argc, char **argv, ModelSettings & s);
+void print_help();
+
+
 int main(int argc, char ** argv)
 {
-	// handle arguments
-	int maxIterations = 100;	// temporary values
-	const char * parFileName = "inp/inits.txt";
-	const char * transFileName = "inp/trans.txt";
+	// handle arguments, set default values
+	ModelSettings settings;
+	parse_args(argc, argv, settings);
 	
 	// handle input data
 	std::vector<STMParameters::ParameterSettings> inits;
 	std::vector<STMLikelihood::Transition> transitionData;
 	std::map<std::string, STMLikelihood::PriorDist> priors;
 	try {
-		STMInput::STMInputHelper inp (parFileName, transFileName);
+		STMInput::STMInputHelper inp (settings.parFileName, settings.transFileName);
 		inits = inp.parameter_inits();
 		priors = inp.priors();
 		transitionData = inp.transitions();
@@ -38,7 +54,7 @@ int main(int argc, char ** argv)
 	// spawn engine and outputworker in threads
 	bool engineFinished = false;
 	std::thread engineThread (&STMEngine::Metropolis::run_sampler, 
-			STMEngine::Metropolis(inits, outQueue, likelihood), maxIterations);
+			STMEngine::Metropolis(inits, outQueue, likelihood), settings.maxIterations);
 	std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 			STMOutput::OutputWorkerThread(outQueue, &engineFinished));
 	
@@ -55,4 +71,41 @@ int main(int argc, char ** argv)
 	delete likelihood;
 	
 	return 0;
+}
+
+
+void parse_args(int argc, char **argv, ModelSettings & s)
+{
+	int thearg;
+	while((thearg = getopt(argc, argv, "hp:t:i:")) != -1)
+	{
+		switch(thearg)
+		{
+			case 'h':
+				print_help();
+				break;
+			case 'p':			
+				s.parFileName = optarg;
+				break;
+			case 't':
+				s.transFileName = optarg;
+				break;
+			case 'i':
+				s.maxIterations = atoi(optarg);
+				break;
+			case '?':
+				print_help();
+				break;
+		}
+	}
+}
+
+void print_help()
+{
+	std::cerr << "Command line options:\n";
+	std::cerr << "    -h:             display this help\n";
+	std::cerr << "    -p <filname>:   specifies the location of the parameter information file\n";
+	std::cerr << "    -t <filname>:   specifies the location of the transition data\n";
+	std::cerr << "    -i <integer>:   specifies the number of mcmc iterations (after adaptation)\n";
+	exit(1);
 }
