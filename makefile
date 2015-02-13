@@ -93,3 +93,10 @@ done_tests: test/bin/input_test test/bin/param_test test/bin/like_test test/bin/
 	./test/bin/param_test
 	./test/bin/like_test
 	./test/bin/engine_test
+
+
+
+
+####### DATA
+data: inp/GenSA_initForFit_rf_0.05.txt inp/initForFit_rf_0.05.rdata prep_data.r
+	Rscript prep_data.r
