@@ -23,6 +23,8 @@ STModel-MCMC : parameters.cpp
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <sstream>
+
 #include "../hdr/parameters.hpp"
 
 namespace STMParameters
@@ -40,21 +42,22 @@ std::vector<double> STModelParameters::targetAcceptanceInterval {0.27, 0.34};
 STModelParameters::STModelParameters(const std::vector<ParameterSettings> & initPars)
 {
 	for(const ParameterSettings & par : initPars) {
-		if(parSettings.count(par.name) > 0 || 
-				std::find(parNames.begin(), parNames.end(), par.name) != parNames.end())
-			throw std::runtime_error(
-					"STModelParameters: duplicate parameter passed in constructor");
-		else {
+
+		if(parSettings.count(par.name) == 0)
 			parSettings[par.name] = par;
+
+		if(std::find(parNames.begin(), parNames.end(), par.name) == parNames.end())
 			parNames.push_back(par.name);
-		}
 	}
 	reset();
 }
 
 
+/* borealExpected version
 TransitionRates STModelParameters::generate_rates(double env1, double env2, int interval,
 		double borealExpected) const
+*/
+TransitionRates STModelParameters::generate_rates(double env1, double env2, int interval) const
 {
 	const STMParameterMap & p = parameterValues;	// to shorten the name
 	STMParameterValueType alpha_b_logit, alpha_t_logit, beta_b_logit, beta_t_logit, 
@@ -86,8 +89,13 @@ TransitionRates STModelParameters::generate_rates(double env1, double env2, int 
 
 	epsilon_logit = p.at("e0") + p.at("e1")*env1 + p.at("e2")*env2 + 
 			p.at("e3")*pow(env1,2) + p.at("e4")*pow(env2,2) + p.at("e5")*pow(env1,3) + 
-			p.at("e6")*pow(env2,3) + p.at("e7")*borealExpected;
+			p.at("e6")*pow(env2,3);
 
+/* borealExpected version
+	epsilon_logit = p.at("e0") + p.at("e1")*env1 + p.at("e2")*env2 + 
+			p.at("e3")*pow(env1,2) + p.at("e4")*pow(env2,2) + p.at("e5")*pow(env1,3) + 
+			p.at("e6")*pow(env2,3) + p.at("e7")*borealExpected;
+*/
 
 	STMParameterValueType alpha_b = make_annual(alpha_b_logit, interval);
 	STMParameterValueType alpha_t = make_annual(alpha_t_logit, interval);
@@ -117,6 +125,50 @@ void STModelParameters::set_acceptance_rate(const STMParameterNameType & par, do
 { parSettings.at(par).acceptanceRate = rate; }
 
 
+std::string STModelParameters::str_acceptance_rates() const
+{
+	std::string red = "\033[1;31m";
+	std::string cyan = "\033[1;36m";
+	std::string normal = "\033[0m";
+	std::stringstream res;
+	res << std::fixed;
+	res.precision(3);
+	res << "[ ";
+	for(const auto ps: parSettings) {
+		if(not_adapted(ps.first))
+			res << red;
+		else
+			res << cyan;
+		res << ps.second.acceptanceRate << " ";
+	}
+	res << normal;
+	res << "]";
+	return res.str();
+}
+
+
+std::string STModelParameters::str_sampling_variance() const
+{
+	std::string red = "\033[1;31m";
+	std::string cyan = "\033[1;36m";
+	std::string normal = "\033[0m";
+	std::stringstream res;
+	res << std::fixed;
+	res.precision(3);
+	res << "[ ";
+	for(const auto ps: parSettings) {
+		if(not_adapted(ps.first))
+			res << red;
+		else
+			res << cyan;
+		res << ps.second.variance << " ";
+	}
+	res << normal;
+	res << "]";
+	return res.str();
+}
+
+
 int STModelParameters::not_adapted(const STMParameterNameType & par) const
 {
 	if(parSettings.at(par).acceptanceRate < targetAcceptanceInterval[0])
@@ -132,8 +184,8 @@ bool STModelParameters::adapted() const
 	int count = 0;
 	for(const auto & p : names())
 		count += std::abs(not_adapted(p));
-	if(count > 0) return true;
-	else return false;
+	if(count > 0) return false;
+	else return true;
 }
 
 
@@ -159,6 +211,10 @@ void STModelParameters::set_sampler_variance(const STMParameterNameType & par, d
 
 void STModelParameters::increment(int n)
 { iterationCount += n; }
+
+
+int STModelParameters::iteration() const
+{ return iterationCount; }
 
 
 const STMParameterMap & STModelParameters::current_state() const

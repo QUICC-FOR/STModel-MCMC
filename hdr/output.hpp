@@ -100,7 +100,8 @@ class OutputBuffer: protected OutputOptions
 
 
 	private:
-	std::vector<std::string> keys;	// controls the order in which data are written
+	static std::vector<std::string> keys;	// controls the order in which data are written
+	static bool headerWritten;
 	std::vector<std::map<std::string, double> > dat;
 	bool dataWritten;
 	

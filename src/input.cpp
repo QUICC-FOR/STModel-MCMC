@@ -1,5 +1,6 @@
 #include "../hdr/input.hpp"
 #include <iostream>
+#include <algorithm>
 
 namespace STMInput
 {
@@ -8,8 +9,15 @@ namespace STMInput
 STMInputHelper::STMInputHelper (const char * initFileName, const char * transFileName, char delim)
 {
 	std::ifstream initFile, transFile;
-	open_file(initFileName, initFile);
-	open_file(transFileName, transFile);
+	initFile.open(initFileName);
+	transFile.open(transFileName);
+	{
+		std::stringstream err;
+		if(!initFile.is_open()) err << "Failed to open " << initFileName << ">\n";
+		if(!transFile.is_open()) err << "Failed to open " << transFileName << ">\n";
+		if(!err.str().empty()) throw std::runtime_error(err.str());
+	}
+
 
 	// get the column names from the first line of the CSVs and figure out their order
 	std::vector<std::string> initNames, transNames;
@@ -62,22 +70,16 @@ std::map<std::string, int> STMInputHelper::get_col_numbers(std::vector<std::stri
 }
 
 
-std::ifstream STMInputHelper::open_file(const char * filename, std::ifstream & file) const
-{
-	file.open(filename);
-	if(!file.is_open()) {
-		std::stringstream err;
-		err << "Failed to open file <" << filename << ">\n";
-		throw std::runtime_error(err.str());
-	}
-}
-
 
 int STMInputHelper::get_next_line(std::ifstream &file, std::vector<std::string> &dest, char delim) const
 {
 	std::string line;
 	if(!std::getline(file, line))
 		return 0;
+
+	// clean quotation marks from the string
+	line.erase(std::remove(line.begin(), line.end(), '"'), line.end());
+
 	std::vector<std::string> result = split_line(line, delim);
 	dest.clear();
 	dest.insert(dest.begin(), result.begin(), result.end());
@@ -145,25 +147,35 @@ void STMInputHelper::display_transition_help() const
 	std::cerr << "        expectedB -- the expected probability of the B state\n";
 	std::cerr << "        expectedT -- the expected probability of the T state\n";
 	std::cerr << "        expectedM -- the expected probability of the M state\n";
-	std::cerr << "        expectedR -- the expected probability of the R state\n\n";
+	std::cerr << "        expectedR -- the expected probability of the R state (optional)\n\n";
 }
 
 
 void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 {
+	static bool rTried = false;
 	std::vector<std::string> line;
+	int ln = 1;
 	while(get_next_line(file, line, delim)) {
+		if(line.empty()) continue;
 		STMLikelihood::Transition newTrans;
-		newTrans.initial = str_convert<char>(line.at(initColIndices.at("initial")));
-		newTrans.final = str_convert<char>(line.at(initColIndices.at("initial")));
-		newTrans.env1 = str_convert<double>(line.at(initColIndices.at("env1")));
-		newTrans.env2 = str_convert<double>(line.at(initColIndices.at("env2")));
-		newTrans.interval = str_convert<int>(line.at(initColIndices.at("interval")));
-		newTrans.expected['B'] = str_convert<double>(line.at(initColIndices.at("expectedB")));
-		newTrans.expected['T'] = str_convert<double>(line.at(initColIndices.at("expectedT")));
-		newTrans.expected['R'] = str_convert<double>(line.at(initColIndices.at("expectedR")));
-		newTrans.expected['M'] = str_convert<double>(line.at(initColIndices.at("expectedM")));
-		
+		newTrans.initial = str_convert<char>(line.at(transColIndices.at("initial")));
+		newTrans.final = str_convert<char>(line.at(transColIndices.at("final")));
+		newTrans.env1 = str_convert<double>(line.at(transColIndices.at("env1")));
+		newTrans.env2 = str_convert<double>(line.at(transColIndices.at("env2")));
+		newTrans.interval = str_convert<int>(line.at(transColIndices.at("interval")));
+		newTrans.expected['B'] = str_convert<double>(line.at(transColIndices.at("expectedB")));
+		newTrans.expected['T'] = str_convert<double>(line.at(transColIndices.at("expectedT")));
+		newTrans.expected['M'] = str_convert<double>(line.at(transColIndices.at("expectedM")));
+		if(!rTried) {
+			rTried = true;
+			try {
+				newTrans.expected['R'] = str_convert<double>(line.at(transColIndices.at("expectedR")));
+			}
+			catch (std::out_of_range e) {
+				std::cerr << "Warning: missing expectedR field in input data\n";
+			}
+		}
 		trans.push_back(newTrans);
 	}
 }

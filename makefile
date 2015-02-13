@@ -6,6 +6,13 @@ CF=-std=c++11
 CO=$(CF) -fopenmp
 #CO=$(CF)
 
+GSL=-lgsl
+
+bin/st_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
+bin/input.o
+	$(CC) $(CO) $(GSL) -o bin/st_mcmc bin/main.o bin/engine.o bin/parameters.o \
+	bin/likelihood.o bin/output.o bin/input.o
+
 bin/main.o: src/main.cpp hdr/engine.hpp hdr/output.hpp hdr/parameters.hpp \
 hdr/likelihood.hpp hdr/input.hpp
 	mkdir -p bin
@@ -36,9 +43,65 @@ bin/input.o: src/input.cpp hdr/input.hpp hdr/parameters.hpp
 
 # TESTS
 
-test: test/bin/output_test
-	./test/bin/output_test
+test: test/bin/main_test
+	./test/bin/main_test
+	
+test/bin/main_test: test/bin/main_test.o bin/engine.o bin/input.o bin/likelihood.o \
+bin/parameters.o bin/output.o
+	$(CC) $(CO) $(GSL) -o test/bin/main_test test/bin/main_test.o bin/engine.o \
+	bin/likelihood.o bin/input.o bin/parameters.o bin/output.o
+	
+test/bin/main_test.o: test/main_test.cpp hdr/engine.hpp hdr/likelihood.hpp \
+hdr/input.hpp hdr/parameters.hpp hdr/output.hpp
+	$(CC) $(CO) -c -o test/bin/main_test.o test/main_test.cpp
+
+test/bin/engine_test: test/bin/engine_test.o bin/engine.o bin/input.o bin/likelihood.o \
+bin/parameters.o bin/output.o
+	$(CC) $(CO) $(GSL) -o test/bin/engine_test test/bin/engine_test.o bin/engine.o \
+	bin/likelihood.o bin/input.o bin/parameters.o bin/output.o
+	
+test/bin/engine_test.o: test/engine_test.cpp hdr/engine.hpp hdr/likelihood.hpp \
+hdr/input.hpp hdr/parameters.hpp hdr/output.hpp
+	$(CC) $(CO) -c -o test/bin/engine_test.o test/engine_test.cpp
+
+test/bin/like_test: test/bin/like_test.o bin/input.o bin/likelihood.o bin/parameters.o
+	$(CC) $(CO) -o test/bin/like_test test/bin/like_test.o bin/likelihood.o bin/input.o \
+	bin/parameters.o $(GSL)
+	
+test/bin/like_test.o: test/like_test.cpp hdr/likelihood.hpp hdr/input.hpp \
+hdr/parameters.hpp 
+	$(CC) $(CO) -c -o test/bin/like_test.o test/like_test.cpp
+
+test/bin/param_test: test/bin/param_test.o bin/input.o bin/parameters.o
+	$(CC) $(CO) -o test/bin/param_test test/bin/param_test.o bin/parameters.o bin/input.o
+	
+test/bin/param_test.o: test/param_test.cpp hdr/parameters.hpp hdr/input.hpp
+	$(CC) $(CO) -c -o test/bin/param_test.o test/param_test.cpp
+
+test/bin/input_test: test/bin/input_test.o bin/parameters.o bin/likelihood.o bin/input.o
+	$(CC) $(CO) -o test/bin/input_test test/bin/input_test.o bin/parameters.o \
+	bin/likelihood.o bin/input.o $(GSL)
+
+test/bin/input_test.o: test/input_test.cpp hdr/parameters.hpp hdr/likelihood.hpp \
+hdr/input.hpp
+	mkdir -p test/bin
+	$(CC) $(CO) -c -o test/bin/input_test.o test/input_test.cpp	
 
 test/bin/output_test: test/output_test.cpp src/output.cpp hdr/output.hpp
 	mkdir -p test/bin
 	$(CC) $(CO) -o test/bin/output_test test/output_test.cpp
+
+
+# tests not run by default
+done_tests: test/bin/input_test test/bin/param_test test/bin/like_test test/bin/engine_test
+	./test/bin/input_test
+	./test/bin/param_test
+	./test/bin/like_test
+	./test/bin/engine_test
+
+
+
+
+####### DATA
+data: inp/GenSA_initForFit_rf_0.05.txt inp/initForFit_rf_0.05.rdata prep_data.r
+	Rscript prep_data.r

@@ -77,9 +77,11 @@ class STModelParameters
 		uses environmental conditions (passed as parameters) along with the model
 		parameters (stored internally) to generate the transition rates
 	*/
-	TransitionRates generate_rates(double env1, double env2, int interval,
-			double borealExpected) const;
-
+	TransitionRates generate_rates(double env1, double env2, int interval) const;
+	/* borealExpected version
+		TransitionRates generate_rates(double env1, double env2, int interval,
+				double borealExpected) const;
+	*/
 
 	/*
 		Access to the state (i.e., the vector of parameters) is provided by a single
@@ -138,11 +140,16 @@ class STModelParameters
 		
 		adapted()
 		returns true if all parameters are adapted
+		
+		str_acceptance_rates: output acceptance rates as a formatted string for logging
+		std_sampling_variance: same as above, but for the sampling variance
 	*/
 	void set_acceptance_rates(const std::map<STMParameterNameType, double> & rates);
 	void set_acceptance_rate(const STMParameterNameType & par, double rate);
 	int not_adapted(const STMParameterNameType & par) const;
 	bool adapted() const;
+	std::string str_acceptance_rates() const;
+	std::string str_sampling_variance() const;
 
 	/*
 		Utility functions
@@ -154,12 +161,13 @@ class STModelParameters
 		reset() sets the parameter object to its initial state and returns the iteration 
 			counter to 0
 		increment(int n) increases the iteration counter by n (default of 1)
+		iteration() returns the iteration count
 	*/
 	size_t size() const;
 	const std::vector<STMParameterNameType> & names() const;
 	void reset();
 	void increment(int n = 1);
-
+	int iteration() const;
 		
 	private:
 	STMParameterValueType make_annual(STMParameterValueType logit_val, int interval) const;
