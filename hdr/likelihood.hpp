@@ -29,13 +29,15 @@
 
 #include <vector>
 #include <map>
-
+#include "model.hpp"
+#include "stmtypes.hpp"
 
 // forward declarations
 namespace STMParameters {
 	class STModelParameters;
 	struct TransitionRates;
 }
+
 
 namespace STMLikelihood {
 
@@ -46,19 +48,6 @@ struct PriorDist {
 	PriorDist (double m, double s) : mean(m), sd(s) {}
 };
 
-struct Transition {
-	char initial, final;
-	double env1, env2;
-	std::map<char, double> expected;
-	int interval;
-	
-	/*
-		returns true if the transition is invalid
-	*/
-	static bool invalid_transition(Transition t)
-		{ return( (t.initial == 'B' && t.final == 'T') || (t.initial == 'T' && 
-				t.final == 'B')); }
-};
 
 
 // function pointer type for likelihood functions
@@ -67,16 +56,16 @@ typedef double (*LhoodFuncPtr)(STMParameters::TransitionRates, std::map<char, do
 
 class Likelihood {
 	public:
-  	Likelihood(const std::vector<Transition> & transitionData, 
-  			const std::map<std::string, PriorDist> & pr);
+  	Likelihood(const std::vector<STMModel::STMTransition> & transitionData, 
+  			const std::map<std::string, PriorDist> & pr, unsigned int numThreads = 8);
 	double compute_log_likelihood(const STMParameters::STModelParameters & params);
 	double log_prior(const std::pair<std::string, double> & param) const;
 
 	private:
-  
-	std::vector<Transition> transitions;
+	std::vector<STMModel::STMTransition> transitions;
 	std::map<char, std::map<char, LhoodFuncPtr> > lhood;
 	std::map<std::string, PriorDist> priors;
+	unsigned int likelihoodThreads;
 };
 
 } // !STMLikelihood namespace

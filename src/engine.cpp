@@ -87,7 +87,7 @@ void Metropolis::auto_adapt()
 	if(outputLevel >= EngineOutputLevel::Normal) {
 		std::cerr << timestamp() << " Starting automatic adaptation\n";
 	}
-	std::vector<STMParameters::STMParameterNameType> parNames (parameters.names());		
+	std::vector<STM::ParName> parNames (parameters.names());		
 	while(!parameters.adapted()) {
 		parameters.set_acceptance_rates(do_sample(adaptationSampleSize));
 		for(const auto & par : parNames) {
@@ -119,23 +119,23 @@ void Metropolis::auto_adapt()
 }
 
 
-std::map<STMParameters::STMParameterNameType, double> Metropolis::do_sample(int n)
+std::map<STM::ParName, double> Metropolis::do_sample(int n)
 // n is the number of samples to take
 // returns a map of acceptance rates keyed by parameter name
 {
 	// 	shuffle the order of parameters
-	std::vector<STMParameters::STMParameterNameType> parNames (parameters.names());
+	std::vector<STM::ParName> parNames (parameters.names());
 	std::random_shuffle(parNames.begin(), parNames.end(), 
 			[this](int n){ return gsl_rng_uniform_int(rng.get(), n); });
 	
-	std::map<STMParameters::STMParameterNameType, int> numAccepted;
+	std::map<STM::ParName, int> numAccepted;
 	for(const auto & par : parNames)
 		numAccepted[par] = 0;
 
 	for(int i = 0; i < n; i++) {
 		// step through each parameter
 		for(const auto & par : parNames) {
-			STMParameters::STMParameterPair proposal = propose_parameter(par);
+			STM::ParPair proposal = propose_parameter(par);
 			numAccepted[par] += select_parameter(proposal);
 		}
 		parameters.increment();
@@ -150,7 +150,7 @@ std::map<STMParameters::STMParameterNameType, double> Metropolis::do_sample(int 
 				std::streamsize oldprecision = std::cerr.precision();
 
 				std::cerr << std::fixed << std::setprecision(3) << " ";
-				STMParameters::STMParameterMap st = parameters.current_state();
+				STM::ParMap st = parameters.current_state();
 				int coln = 0;
 				for(auto pa : st) {
 					std::cerr << std::setw(6) << pa.first << std::setw(8) << pa.second;
@@ -167,22 +167,22 @@ std::map<STMParameters::STMParameterNameType, double> Metropolis::do_sample(int 
 		}
 }
 
-	std::map<STMParameters::STMParameterNameType, double> acceptanceRates;
+	std::map<STM::ParName, double> acceptanceRates;
 	for(const auto & par : parNames)
 		acceptanceRates[par] = double(numAccepted[par]) / n;
 	return acceptanceRates;
 }
 
 
-STMParameters::STMParameterPair Metropolis::propose_parameter(const 
-		STMParameters::STMParameterNameType & par) const
+STM::ParPair Metropolis::propose_parameter(const 
+		STM::ParName & par) const
 {
-	return STMParameters::STMParameterPair (par, parameters.current_state().at(par) + 
+	return STM::ParPair (par, parameters.current_state().at(par) + 
 			gsl_ran_gaussian(rng.get(), parameters.sampler_variance(par)));
 }
 
 
-int Metropolis::select_parameter(const STMParameters::STMParameterPair & p)
+int Metropolis::select_parameter(const STM::ParPair & p)
 // returns 1 if proposal is accepted, 0 otherwise
 {
 	STMParameters::STModelParameters proposal (parameters);
@@ -204,7 +204,7 @@ int Metropolis::select_parameter(const STMParameters::STMParameterPair & p)
 
 
 double Metropolis::log_posterior_prob(const STMParameters::STModelParameters & par, 
-		const STMParameters::STMParameterPair & pair) const
+		const STM::ParPair & pair) const
 { return likelihood->compute_log_likelihood(par) + likelihood->log_prior(pair); }
 
 

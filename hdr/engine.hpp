@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include "parameters.hpp"
+#include "stmtypes.hpp"
 
 // forward declarations
 namespace STMOutput {
@@ -44,11 +45,11 @@ class Metropolis
 	// private functions
 	void auto_adapt();
 	std::map<std::string, double> do_sample(int n);
-	STMParameters::STMParameterPair propose_parameter(const 
-			STMParameters::STMParameterNameType & par) const;
-	int select_parameter(const STMParameters::STMParameterPair & p);
+	STM::ParPair propose_parameter(const 
+			STM::ParName & par) const;
+	int select_parameter(const STM::ParPair & p);
 	double log_posterior_prob(const STMParameters::STModelParameters & par, 
-			const STMParameters::STMParameterPair & pair) const;
+			const STM::ParPair & pair) const;
 	void set_up_rng();
 	
 	// pointers to objects that the engine doesn't own, but that it uses
@@ -57,7 +58,7 @@ class Metropolis
 
 	// objects that the engine owns
 	STMParameters::STModelParameters parameters;
-	std::vector<STMParameters::STMParameterMap> currentSamples;
+	std::vector<STM::ParMap> currentSamples;
 	std::shared_ptr<gsl_rng> rng;
 	double currentPosteriorProb;
 
