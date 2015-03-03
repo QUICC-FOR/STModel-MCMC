@@ -29,19 +29,20 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
-#include "../hdr/parameters.hpp"
-#include "../hdr/likelihood.hpp"
-
+#include "parameters.hpp"
+#include "likelihood.hpp"
+#include "model.hpp"
 
 namespace STMInput {
 
 class STMInputHelper
 {
 	public:
-	STMInputHelper (const char * initFileName, const char * transFileName, char delim = ',');
+	STMInputHelper (const char * initFileName, const char * transFileName, 
+			bool useCube = false, char delim = ',');
 	std::vector<STMParameters::ParameterSettings> parameter_inits();
 	std::map<std::string, STMLikelihood::PriorDist> priors();
-	std::vector<STMLikelihood::Transition> transitions();
+	std::vector<STMModel::STMTransition> transitions();
 	
 	private:
 	int get_next_line(std::ifstream &file, std::vector<std::string> &dest, char delim) const;
@@ -50,13 +51,16 @@ class STMInputHelper
 	void display_parameter_help() const;
 	void display_transition_help() const;
 	void read_transitions(std::ifstream &file, char delim);
+	std::map<char, double> read_prevalence(std::vector<std::string> line);
 	std::vector<std::string> split_line(const std::string & str, char delim) const;
 	template<typename T> T str_convert(const std::string &s) const;
 	
 	std::map<std::string, int> initColIndices, transColIndices;
 	std::vector<STMParameters::ParameterSettings> initialValues;
 	std::map<std::string, STMLikelihood::PriorDist> priorDists;
-	std::vector<STMLikelihood::Transition> trans;
+	std::vector<STMModel::STMTransition> trans;
+	bool useCube;
+	std::string prevalenceBaseName;
 };
 
 

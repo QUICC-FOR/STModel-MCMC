@@ -1,4 +1,5 @@
 #include "../hdr/input.hpp"
+#include "../hdr/stmtypes.hpp"
 #include <iostream>
 #include <algorithm>
 
@@ -6,7 +7,8 @@ namespace STMInput
 {
 
 
-STMInputHelper::STMInputHelper (const char * initFileName, const char * transFileName, char delim)
+STMInputHelper::STMInputHelper (const char * initFileName, const char * transFileName, 
+		bool useCube, char delim) : useCube(useCube), prevalenceBaseName("prevalence")
 {
 	std::ifstream initFile, transFile;
 	initFile.open(initFileName);
@@ -56,7 +58,7 @@ std::map<std::string, STMLikelihood::PriorDist> STMInputHelper::priors()
 { return priorDists; }
 
 
-std::vector<STMLikelihood::Transition> STMInputHelper::transitions()
+std::vector<STMModel::STMTransition> STMInputHelper::transitions()
 { return trans; }
 
 
@@ -92,9 +94,8 @@ void STMInputHelper::read_inits(std::ifstream &file, char delim)
 	std::vector<std::string> line;
 	while(get_next_line(file, line, delim)) {
 		std::string parname = line.at(initColIndices.at("name"));
-		STMParameters::STMParameterValueType init = 
-				str_convert<STMParameters::STMParameterValueType>(line.at(
-				initColIndices.at("initialValue")));
+		STM::ParValue init = str_convert<STM::ParValue>(
+				line.at(initColIndices.at("initialValue")));
 		bool setVariance = true;
 		double variance;
 		try {
@@ -144,10 +145,50 @@ void STMInputHelper::display_transition_help() const
 	std::cerr << "        env1 -- the first environmental variable (temperature)\n";
 	std::cerr << "        env2 -- the second environmental variable (precipitation)\n";
 	std::cerr << "        interval -- number of years between the two samples\n";
-	std::cerr << "        expectedB -- the expected probability of the B state\n";
-	std::cerr << "        expectedT -- the expected probability of the T state\n";
-	std::cerr << "        expectedM -- the expected probability of the M state\n";
-	std::cerr << "        expectedR -- the expected probability of the R state (optional)\n\n";
+	
+	
+	std::vector<char> states = STMModel::State::state_names();
+	std::cerr << "Prevalence columns: at least " << states.size() - 1 << " of the ";
+	std::cerr << states.size() << " are required\n";
+	for(auto st : states)
+	{
+		std::cerr << "        " << prevalenceBaseName << st;
+		std::cerr << " -- the expected probability of the " << st << "state\n";
+	}
+}
+
+
+
+std::map<char, double> STMInputHelper::read_prevalence(std::vector<std::string> line)
+{
+	// build a map of prevalence values
+	std::map<char, double> prevalence;
+	std::vector<char> states = STMModel::State::state_names();
+	std::vector<char> notFound;
+	std::out_of_range lastOOR ("");
+	for(auto st : states)
+	{
+		std::string prevName = prevalenceBaseName + st;
+		try
+		{
+			prevalence[st] = str_convert<double>(line.at(transColIndices.at(prevName)));
+		}
+		catch (std::out_of_range e)
+		{
+			notFound.push_back(st);
+			lastOOR = e;
+		}
+	}
+	if(notFound.size() == 1)
+	{
+		double val = 1;
+		for(auto pr : prevalence)
+			val -= pr.second;
+		prevalence[notFound[0]] = val;
+	}
+	else if(notFound.size() > 1)
+		throw lastOOR;
+	return prevalence;
 }
 
 
@@ -158,27 +199,18 @@ void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 	int ln = 1;
 	while(get_next_line(file, line, delim)) {
 		if(line.empty()) continue;
-		STMLikelihood::Transition newTrans;
-		newTrans.initial = str_convert<char>(line.at(transColIndices.at("initial")));
-		newTrans.final = str_convert<char>(line.at(transColIndices.at("final")));
-		newTrans.env1 = str_convert<double>(line.at(transColIndices.at("env1")));
-		newTrans.env2 = str_convert<double>(line.at(transColIndices.at("env2")));
-		newTrans.interval = str_convert<int>(line.at(transColIndices.at("interval")));
-		newTrans.expected['B'] = str_convert<double>(line.at(transColIndices.at("expectedB")));
-		newTrans.expected['T'] = str_convert<double>(line.at(transColIndices.at("expectedT")));
-		newTrans.expected['M'] = str_convert<double>(line.at(transColIndices.at("expectedM")));
-		if(!rTried) {
-			rTried = true;
-			try {
-				newTrans.expected['R'] = str_convert<double>(line.at(transColIndices.at("expectedR")));
-			}
-			catch (std::out_of_range e) {
-				std::cerr << "Warning: missing expectedR field in input data\n";
-			}
-		}
-		trans.push_back(newTrans);
+		std::map<char, double> prev = read_prevalence(line);
+		char initial = str_convert<char>(line.at(transColIndices.at("initial")));
+		char final = str_convert<char>(line.at(transColIndices.at("final")));
+		double env1 = str_convert<double>(line.at(transColIndices.at("env1")));
+		double env2 = str_convert<double>(line.at(transColIndices.at("env2")));
+		int interval = str_convert<int>(line.at(transColIndices.at("interval")));
+
+		trans.push_back(STMModel::STMTransition(initial, final, env1, env2, prev, 
+				interval, useCube));
 	}
 }
+
 
 std::vector<std::string> STMInputHelper::split_line(const std::string & str, char delim) const
 {

@@ -8,37 +8,55 @@ CO=$(CF) -fopenmp
 
 GSL=-lgsl
 
-bin/st_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
-bin/input.o
-	$(CC) $(CO) $(GSL) -o bin/st_mcmc bin/main.o bin/engine.o bin/parameters.o \
-	bin/likelihood.o bin/output.o bin/input.o
+twostate: bin/stm2_mcmc
+fourstate: bin/stm4_mcmc
 
+# executables
+# two state
+bin/stm2_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
+bin/input.o bin/model_2.o
+	$(CC) $(CO) $(GSL) -o bin/st_mcmc bin/main.o bin/engine.o bin/parameters.o \
+	bin/likelihood.o bin/output.o bin/input.o bin/model_2.o
+
+# four state
+bin/stm4_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
+bin/input.o bin/model_4.o
+	$(CC) $(CO) $(GSL) -o bin/st_mcmc bin/main.o bin/engine.o bin/parameters.o \
+	bin/likelihood.o bin/output.o bin/input.o bin/model_4.o
+
+
+# object files
 bin/main.o: src/main.cpp hdr/engine.hpp hdr/output.hpp hdr/parameters.hpp \
-hdr/likelihood.hpp hdr/input.hpp
+hdr/likelihood.hpp hdr/input.hpp hdr/model.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/main.o src/main.cpp
-
-bin/engine.o: src/engine.cpp hdr/engine.hpp hdr/parameters.hpp hdr/likelihood.hpp \
-hdr/output.hpp
-	mkdir -p bin
-	$(CC) $(CO) -c -o bin/engine.o src/engine.cpp
-
-bin/parameters.o: src/parameters.cpp hdr/parameters.hpp
-	mkdir -p bin
-	$(CC) $(CO) -c -o bin/parameters.o src/parameters.cpp
-
-bin/likelihood.o: src/likelihood.cpp hdr/likelihood.hpp
-	mkdir -p bin
-	$(CC) $(CO) -c -o bin/likelihood.o src/likelihood.cpp
-
-bin/output.o: src/output.cpp hdr/output.hpp
-	mkdir -p bin
-	$(CC) $(CO) -c -o bin/output.o src/output.cpp
-
-bin/input.o: src/input.cpp hdr/input.hpp hdr/parameters.hpp
+	
+bin/input.o: src/input.cpp hdr/input.hpp hdr/parameters.hpp hdr/likelihood.hpp \
+hdr/model.hpp hdr/stmtypes.hpp
 	mkdir -p bin
 	$(CC) $(CO) -c -o bin/input.o src/input.cpp
 
+bin/engine.o: src/engine.cpp hdr/engine.hpp hdr/parameters.hpp hdr/likelihood.hpp \
+hdr/output.hpp hdr/stmtypes.hpp
+	$(CC) $(CO) -c -o bin/engine.o src/engine.cpp
+
+bin/likelihood.o: src/likelihood.cpp hdr/likelihood.hpp hdr/model.hpp hdr/stmtypes.hpp \
+hdr/parameters.hpp
+	$(CC) $(CO) -c -o bin/likelihood.o src/likelihood.cpp
+
+bin/parameters.o: src/parameters.cpp hdr/parameters.hpp hdr/stmtypes.hpp
+	$(CC) $(CO) -c -o bin/parameters.o src/parameters.cpp
+
+bin/output.o: src/output.cpp hdr/output.hpp
+	$(CC) $(CO) -c -o bin/output.o src/output.cpp
+
+# 4-state model
+bin/model_4.o: src/four_state/model_4s.cpp hdr/model.hpp hdr/stmtypes.hpp
+	$(CC) $(CO) -c -o bin/model_4.o src/four_state/model_4s.cpp
+
+# 2-state model
+bin/model_2.o: src/two_state/model_2s.cpp hdr/model.hpp hdr/stmtypes.hpp
+	$(CC) $(CO) -c -o bin/model_2.o src/two_state/model_2s.cpp
 
 
 # TESTS
