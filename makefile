@@ -15,13 +15,13 @@ fourstate: bin/stm4_mcmc
 # two state
 bin/stm2_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
 bin/input.o bin/model_2.o
-	$(CC) $(CO) $(GSL) -o bin/st_mcmc bin/main.o bin/engine.o bin/parameters.o \
+	$(CC) $(CO) $(GSL) -o bin/stm2_mcmc bin/main.o bin/engine.o bin/parameters.o \
 	bin/likelihood.o bin/output.o bin/input.o bin/model_2.o
 
 # four state
 bin/stm4_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
 bin/input.o bin/model_4.o
-	$(CC) $(CO) $(GSL) -o bin/st_mcmc bin/main.o bin/engine.o bin/parameters.o \
+	$(CC) $(CO) $(GSL) -o bin/stm4_mcmc bin/main.o bin/engine.o bin/parameters.o \
 	bin/likelihood.o bin/output.o bin/input.o bin/model_4.o
 
 
