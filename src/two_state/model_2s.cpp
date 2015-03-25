@@ -64,19 +64,19 @@ void STMTransition::setup_transition_functions()
 			STMTransition::transitionFunctions;
 
 	// Colonizations
-	tf.at(S::Absent).at(S::Present) = [](STM::ParMap p, STM::StateMap e) 
+	tf[S::Absent][S::Present] = [](STM::ParMap p, STM::StateMap e) 
 	{ return p["gamma"] * e[S::Present]; };
 
 	// Absences
-	tf.at(S::Absent).at(S::Absent) = [&tf](STM::ParMap p, STM::StateMap e) 
+	tf[S::Absent][S::Absent] = [&tf](STM::ParMap p, STM::StateMap e) 
 	{ return 1.0 - tf[S::Absent][S::Present](p,e); };
 	
 	// Extinctions
-	tf.at(S::Present).at(S::Absent) = [](STM::ParMap p, STM::StateMap e) 
+	tf[S::Present][S::Absent] = [](STM::ParMap p, STM::StateMap e) 
 	{ return p["epsilon"]; };
 
 	// Presences
-	tf.at(S::Present).at(S::Present) = [&tf](STM::ParMap p, STM::StateMap e) 
+	tf[S::Present][S::Present] = [&tf](STM::ParMap p, STM::StateMap e) 
 	{ return 1.0 - tf[S::Present][S::Absent](p,e); };
 }
 
