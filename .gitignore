@@ -30,6 +30,9 @@
 # Data
 inp/*
 
+# results
+res/*
+
 src/ref*
 bin/*
 test/bin/*

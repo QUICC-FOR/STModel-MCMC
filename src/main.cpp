@@ -9,6 +9,7 @@
 #include "../hdr/input.hpp"
 #include "../hdr/parameters.hpp"
 #include "../hdr/likelihood.hpp"
+#include "../hdr/model.hpp"
 
 struct ModelSettings 
 {
@@ -33,7 +34,7 @@ int main(int argc, char ** argv)
 	
 	// handle input data
 	std::vector<STMParameters::ParameterSettings> inits;
-	std::vector<STMLikelihood::Transition> transitionData;
+	std::vector<STMModel::STMTransition> transitionData;
 	std::map<std::string, STMLikelihood::PriorDist> priors;
 	try {
 		STMInput::STMInputHelper inp (settings.parFileName, settings.transFileName);
