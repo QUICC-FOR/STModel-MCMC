@@ -32,21 +32,23 @@ namespace STMEngine {
 
 Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood,
-		EngineOutputLevel outLevel, bool rngSetSeed, int rngSeed) :
+		EngineOutputLevel outLevel, int thin, bool rngSetSeed, int rngSeed) :
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 
 // objects that we own or share
 parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), 
-rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel),
+rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSize(thin),
 
 // the parameters below have default values with no support for changing them
-outputBufferSize(10000), adaptationSampleSize(100), adaptationRate(1.1)
+outputBufferSize(1000), adaptationSampleSize(100), adaptationRate(1.1)
 {
-
 	// check pointers
 	if(!queue || !lhood)
 		throw std::runtime_error("Metropolis: passed null pointer on construction");
+		
+	if(thin < 1)
+		throw std::runtime_error("Metropolis: thin interval must be greater than 0");
 }
 
 
@@ -132,11 +134,15 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 	for(const auto & par : parNames)
 		numAccepted[par] = 0;
 
-	for(int i = 0; i < n; i++) {
-		// step through each parameter
-		for(const auto & par : parNames) {
-			STM::ParPair proposal = propose_parameter(par);
-			numAccepted[par] += select_parameter(proposal);
+	for(int i = 0; i < n; i++)
+	{
+		for(int j = 0; j < thinSize; j++)
+		{
+			// step through each parameter
+			for(const auto & par : parNames) {
+				STM::ParPair proposal = propose_parameter(par);
+				numAccepted[par] += select_parameter(proposal);
+			}
 		}
 		parameters.increment();
 		currentSamples.push_back(parameters.current_state());

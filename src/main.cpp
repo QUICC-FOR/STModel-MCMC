@@ -15,11 +15,12 @@ struct ModelSettings
 {
 	const char * parFileName;
 	const char * transFileName;
+	int thin;
 	int maxIterations;
 	STMEngine::EngineOutputLevel verbose;
 	
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
-			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal) {}
+			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1) {}
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -56,8 +57,8 @@ int main(int argc, char ** argv)
 	// spawn engine and outputworker in threads
 	bool engineFinished = false;
 	std::thread engineThread (&STMEngine::Metropolis::run_sampler, 
-			STMEngine::Metropolis(inits, outQueue, likelihood, settings.verbose), 
-			settings.maxIterations);
+			STMEngine::Metropolis(inits, outQueue, likelihood, settings.verbose, 
+			settings.thin), settings.maxIterations);
 	std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 			STMOutput::OutputWorkerThread(outQueue, &engineFinished));
 	
@@ -80,7 +81,7 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hp:t:i:v:")) != -1)
+	while((thearg = getopt(argc, argv, "hp:t:n:i:v:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -92,6 +93,9 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 				break;
 			case 't':
 				s.transFileName = optarg;
+				break;
+			case 'n':
+				s.thin = atoi(optarg);
 				break;
 			case 'i':
 				s.maxIterations = atoi(optarg);
