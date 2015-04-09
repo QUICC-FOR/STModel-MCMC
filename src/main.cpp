@@ -16,11 +16,13 @@ struct ModelSettings
 	const char * parFileName;
 	const char * transFileName;
 	int thin;
+	int burnin;
 	int maxIterations;
 	STMEngine::EngineOutputLevel verbose;
 	
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
-			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1) {}
+			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
+			burnin(0) {}
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -58,7 +60,7 @@ int main(int argc, char ** argv)
 	bool engineFinished = false;
 	std::thread engineThread (&STMEngine::Metropolis::run_sampler, 
 			STMEngine::Metropolis(inits, outQueue, likelihood, settings.verbose, 
-			settings.thin), settings.maxIterations);
+			settings.thin, settings.burnin), settings.maxIterations);
 	std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 			STMOutput::OutputWorkerThread(outQueue, &engineFinished));
 	
@@ -81,7 +83,7 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hp:t:n:i:v:")) != -1)
+	while((thearg = getopt(argc, argv, "hp:t:n:i:b:v:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -100,6 +102,9 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 			case 'i':
 				s.maxIterations = atoi(optarg);
 				break;
+			case 'b':
+				s.burnin = atoi(optarg);
+				break;
 			case 'v':
 				s.verbose = STMEngine::EngineOutputLevel(atoi(optarg));
 				break;
@@ -116,7 +121,9 @@ void print_help()
 	std::cerr << "    -h:             display this help\n";
 	std::cerr << "    -p <filname>:   specifies the location of the parameter information file\n";
 	std::cerr << "    -t <filname>:   specifies the location of the transition data\n";
+	std::cerr << "    -n <integer>:   thinning interval\n";
 	std::cerr << "    -i <integer>:   specifies the number of mcmc iterations (after adaptation)\n";
+	std::cerr << "    -b <integer>:   set the number of burn in samples\n";
 	std::cerr << "    -v <integer>:   set verbosity; control level of output as follows:\n";	
 	std::cerr << "                         0: Quiet; print nothing\n";	
 	std::cerr << "                         1: Normal; only print status messages\n";	

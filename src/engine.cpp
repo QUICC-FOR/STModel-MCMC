@@ -32,12 +32,12 @@ namespace STMEngine {
 
 Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood,
-		EngineOutputLevel outLevel, int thin, bool rngSetSeed, int rngSeed) :
+		EngineOutputLevel outLevel, int thin, int burnin, bool rngSetSeed, int rngSeed) :
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 
 // objects that we own or share
-parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), 
+parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), burnin(burnin),
 rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSize(thin),
 
 // the parameters below have default values with no support for changing them
@@ -59,22 +59,49 @@ void Metropolis::run_sampler(int n)
 	if(!parameters.adapted())
 		auto_adapt();
 
+	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
 	while(numCompleted < n) {
-		int sampleSize = ((n - numCompleted < outputBufferSize) ? (n - numCompleted) : 
-				outputBufferSize);
+		int sampleSize;
+		if(burninCompleted < burnin)
+		{
+			sampleSize = ( (burnin - burninCompleted < outputBufferSize) ? 
+					(burnin - burninCompleted) : outputBufferSize);
+		}
+		else
+		{
+			sampleSize = ((n - numCompleted < outputBufferSize) ? (n - numCompleted) : 
+					outputBufferSize);
+		}
 		currentSamples.reserve(sampleSize);
 		do_sample(sampleSize);
-		STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
-				STMOutput::OutputKeyType::POSTERIOR);
+		
+		if(burninCompleted < burnin)
+		{
+			burninCompleted += sampleSize;		
+		}
+		else
+		{
+			STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
+					STMOutput::OutputKeyType::POSTERIOR);
+			outputQueue->push(buffer);	// note that this may block if the queue is busy
+			numCompleted += sampleSize;		
+		}
+
 		currentSamples.clear();
-		outputQueue->push(buffer);	// note that this may block if the queue is busy
-		numCompleted += sampleSize;
 		
 		/* if desired: some output with the current time */
 		if(outputLevel >= EngineOutputLevel::Normal) {
-			std::cerr << timestamp() << "   MCMC Iteration " << numCompleted << " of " 
-					<< n << '\n';
+			if(numCompleted == 0)
+			{
+				std::cerr << timestamp() << "   MCMC burnin iteration " << burninCompleted
+						<< " of " << burnin << '\n';						
+			}
+			else
+			{
+				std::cerr << timestamp() << "   MCMC burnin iteration " << numCompleted << " of " 
+						<< n << '\n';			
+			}
 		}
 	}
 }
