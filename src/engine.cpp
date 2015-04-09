@@ -191,6 +191,11 @@ int Metropolis::select_parameter(const STM::ParPair & p)
 	double proposalLogPosterior = log_posterior_prob(proposal, p);
 	double previousLogPosterior = log_posterior_prob(parameters, parameters.at(p.first));
 	double acceptanceProb = exp(proposalLogPosterior - previousLogPosterior);
+
+	// 	check for nan -- right now this is not being handled, but it should be
+	if(std::isnan(acceptanceProb))
+		acceptanceProb = 0;
+
 	double testVal = gsl_rng_uniform(rng.get());
 	if(testVal < acceptanceProb) {
 		currentPosteriorProb = proposalLogPosterior;

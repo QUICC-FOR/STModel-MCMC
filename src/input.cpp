@@ -196,8 +196,9 @@ void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 {
 	static bool rTried = false;
 	std::vector<std::string> line;
-	int ln = 1;
+	int ln = 0;
 	while(get_next_line(file, line, delim)) {
+		++ln;
 		if(line.empty()) continue;
 		std::map<char, double> prev = read_prevalence(line);
 		char initial = str_convert<char>(line.at(transColIndices.at("initial")));

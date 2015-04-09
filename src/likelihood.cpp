@@ -39,9 +39,6 @@
 
 using std::vector;
 
-// total number of threads to be used if the program is built for multi-threaded use
-#define S_NUM_THREADS 11
-
 namespace STMLikelihood {
 
 Likelihood::Likelihood(const std::vector<STMModel::STMTransition> & transitionData, 
@@ -60,10 +57,6 @@ double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters
 		{
 			STMModel::STMTransition & dat = transitions.at(i);
 			double lik = dat.transition_prob(params.current_state());
-		
-			// likelihood might be zero or negative (due to subtracting probabilities)
-			if(lik <= 0) lik = std::nextafter(0,1);
-		
 			sumlogl += std::log(lik);
 		} // ! for i
 	} // !parallel for
