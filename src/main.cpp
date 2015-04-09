@@ -17,12 +17,13 @@ struct ModelSettings
 	const char * transFileName;
 	int thin;
 	int burnin;
+	int numThreads;
 	int maxIterations;
 	STMEngine::EngineOutputLevel verbose;
 	
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
 			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
-			burnin(0) {}
+			burnin(0), numThreads(8) {}
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -54,7 +55,7 @@ int main(int argc, char ** argv)
 	// create and initialize main objects
 	STMOutput::OutputQueue * outQueue = new STMOutput::OutputQueue;
 	STMLikelihood::Likelihood * likelihood = new STMLikelihood::Likelihood 
-			(transitionData, priors);
+			(transitionData, priors, settings.numThreads);
 
 	// spawn engine and outputworker in threads
 	bool engineFinished = false;
@@ -83,7 +84,7 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hp:t:n:i:b:v:")) != -1)
+	while((thearg = getopt(argc, argv, "hp:t:n:i:b:c:v:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -105,6 +106,9 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 			case 'b':
 				s.burnin = atoi(optarg);
 				break;
+			case 'c':
+				s.numThreads = atoi(optarg);
+				break;
 			case 'v':
 				s.verbose = STMEngine::EngineOutputLevel(atoi(optarg));
 				break;
@@ -124,6 +128,7 @@ void print_help()
 	std::cerr << "    -n <integer>:   thinning interval\n";
 	std::cerr << "    -i <integer>:   specifies the number of mcmc iterations (after adaptation)\n";
 	std::cerr << "    -b <integer>:   set the number of burn in samples\n";
+	std::cerr << "    -c <integer>:   set the number of cores on which to compute the model (default 8)\n";
 	std::cerr << "    -v <integer>:   set verbosity; control level of output as follows:\n";	
 	std::cerr << "                         0: Quiet; print nothing\n";	
 	std::cerr << "                         1: Normal; only print status messages\n";	
