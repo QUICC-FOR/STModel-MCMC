@@ -40,12 +40,18 @@ namespace STMParameters {
 
 
 namespace STMLikelihood {
+enum class PriorFamilies
+{
+	Normal,
+	Cauchy
+};
 
 struct PriorDist {
 	double mean;
 	double sd;
+	PriorFamilies family;
 	PriorDist() {}
-	PriorDist (double m, double s) : mean(m), sd(s) {}
+	PriorDist (double m, double s, PriorFamilies f) : mean(m), sd(s), family(f) {}
 };
 
 

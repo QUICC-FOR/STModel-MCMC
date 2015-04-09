@@ -114,7 +114,17 @@ void STMInputHelper::read_inits(std::ifstream &file, char delim)
 		
 		double mean = str_convert<double>(line.at(initColIndices.at("priorMean")));
 		double sd = str_convert<double>(line.at(initColIndices.at("priorSD")));
-		priorDists[parname] = STMLikelihood::PriorDist (mean, sd);
+		std::string fam = line.at(initColIndices.at("priorDist"));
+		STMLikelihood::PriorFamilies family;
+		if(fam == "Cauchy")
+		{
+			family = STMLikelihood::PriorFamilies::Cauchy;
+		}
+		else
+		{
+			family = STMLikelihood::PriorFamilies::Normal;
+		}
+		priorDists[parname] = STMLikelihood::PriorDist (mean, sd, family);
 	}
 }
 
