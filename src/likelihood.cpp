@@ -68,7 +68,19 @@ double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters
 
 double Likelihood::log_prior(const std::pair<std::string, double> & param) const
 {
-	return std::log(gsl_ran_gaussian_pdf(param.second - priors.at(param.first).mean, 
-			priors.at(param.first).sd));
+	double val;
+	const PriorDist & prior = priors.at(param.first);
+	if(prior.family == PriorFamilies::Normal)
+	{
+		val = gsl_ran_gaussian_pdf(param.second - prior.mean, prior.sd);
+	} else if(prior.family == PriorFamilies::Cauchy)
+	{
+		val = gsl_ran_cauchy_pdf(param.second - prior.mean, prior.sd);
+	} else
+	{
+		throw(std::runtime_error("Invalid prior distribution specified"));
+	}
+
+	return std::log(val);
 }
 } //!namespace Likelihood
