@@ -41,7 +41,7 @@ parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), burnin(burnin),
 rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSize(thin),
 
 // the parameters below have default values with no support for changing them
-outputBufferSize(1000), adaptationSampleSize(100), adaptationRate(1.1)
+outputBufferSize(500), adaptationSampleSize(100), adaptationRate(1.1)
 {
 	// check pointers
 	if(!queue || !lhood)
@@ -143,7 +143,7 @@ void Metropolis::auto_adapt()
 	}
 	parameters.reset();
 	if(outputLevel >= EngineOutputLevel::Normal) {
-		std::cerr << timestamp() << "Adaptation completed successfully\n";
+		std::cerr << timestamp() << " Adaptation completed successfully\n";
 	}
 }
 
