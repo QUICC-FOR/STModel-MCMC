@@ -83,7 +83,7 @@ void Metropolis::run_sampler(int n)
 		else
 		{
 			STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
-					STMOutput::OutputKeyType::POSTERIOR);
+					STMOutput::OutputKeyType::posterior);
 			outputQueue->push(buffer);	// note that this may block if the queue is busy
 			numCompleted += sampleSize;		
 		}

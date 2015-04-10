@@ -33,19 +33,21 @@
 #include <map>
 #include <deque>
 #include <chrono>
+#include <ostream>
+#include <fstream>
 
 
 namespace STMOutput {
 
 enum class OutputKeyType {
-	POSTERIOR,	// for writing posterior samples
-	INITS,		// initial values
-	TUNING		// tuning parameters
+	posterior,			// for writing posterior samples
+	inits,				// initial values
+	samplerVariance		// tuning parameters
 };
 
 
 enum class OutputMethodType {
-	CSV,		// writes to csv files (comma separated, with a header) (not implemented)
+	CSV,		// writes to csv files (comma separated, with a header)
 	HDF5,		// uses the HDF5 library and writes all objects to a single file (not implemented)
 	STDOUT		// dumps raw data to stdout
 };
@@ -56,12 +58,10 @@ class OutputOptions
 {
 	public:
 	OutputOptions(std::string baseFileName = "STMOutput", 
-		std::vector<std::string> dataNames = std::vector<std::string> (),
 		OutputMethodType method = OutputMethodType::STDOUT);
 		
 	protected:
 	std::string filename;
-	std::vector<std::string> header;
 	OutputMethodType outputMethod;
 };
 
@@ -100,8 +100,13 @@ class OutputBuffer: protected OutputOptions
 
 
 	private:
+	std::ostream & set_output_stream(std::ofstream & file);
+	void cleanup_output_stream(std::ofstream & file);
+
 	static std::vector<std::string> keys;	// controls the order in which data are written
 	static bool headerWritten;
+	static std::map<OutputKeyType, bool> append;
+	OutputKeyType keyType;
 	std::vector<std::map<std::string, double> > dat;
 	bool dataWritten;
 	

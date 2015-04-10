@@ -18,12 +18,16 @@ struct ModelSettings
 	int thin;
 	int burnin;
 	int numThreads;
+	STMOutput::OutputMethodType outMethod;
+	std::string outDir;
 	int maxIterations;
+	
 	STMEngine::EngineOutputLevel verbose;
 	
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
 			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
-			burnin(0), numThreads(8) {}
+			burnin(0), numThreads(8), outMethod(STMOutput::OutputMethodType::CSV),
+			outDir("output") {}
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -84,18 +88,24 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hp:t:n:i:b:c:v:")) != -1)
+	while((thearg = getopt(argc, argv, "hsp:t:o:n:i:b:c:v:")) != -1)
 	{
 		switch(thearg)
 		{
 			case 'h':
 				print_help();
 				break;
+			case 's':
+				s.outMethod = STMOutput::OutputMethodType::STDOUT;
+				break;
 			case 'p':			
 				s.parFileName = optarg;
 				break;
 			case 't':
 				s.transFileName = optarg;
+				break;
+			case 'o':
+				s.outDir = optarg;
 				break;
 			case 'n':
 				s.thin = atoi(optarg);
@@ -123,8 +133,10 @@ void print_help()
 {
 	std::cerr << "Command line options:\n";
 	std::cerr << "    -h:             display this help\n";
+	std::cerr << "    -s:             output to standard out (default is CSV files)\n";
 	std::cerr << "    -p <filname>:   specifies the location of the parameter information file\n";
 	std::cerr << "    -t <filname>:   specifies the location of the transition data\n";
+	std::cerr << "    -o <directory>: set the output directory name (ignored when -s is set)\n";
 	std::cerr << "    -n <integer>:   thinning interval\n";
 	std::cerr << "    -i <integer>:   specifies the number of mcmc iterations (after adaptation)\n";
 	std::cerr << "    -b <integer>:   set the number of burn in samples\n";
