@@ -202,7 +202,7 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 
 	std::map<STM::ParName, double> acceptanceRates;
 	for(const auto & par : parNames)
-		acceptanceRates[par] = double(numAccepted[par]) / n;
+		acceptanceRates[par] = double(numAccepted[par]) / (n*thinSize);
 	return acceptanceRates;
 }
 
