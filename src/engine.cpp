@@ -141,7 +141,7 @@ void Metropolis::auto_adapt()
 		}
 		adaptationSampleSize *= 1.25;
 	}
-	parameters.reset();
+//	parameters.reset(); // if disabled, this will include adaptation samples in the burnin
 	if(outputLevel >= EngineOutputLevel::Normal) {
 		std::cerr << timestamp() << " Adaptation completed successfully\n";
 	}
