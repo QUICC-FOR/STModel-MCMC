@@ -35,7 +35,7 @@ class Metropolis
 	Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 			STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * 
 			const lhood, EngineOutputLevel outLevel = EngineOutputLevel::Normal, 
-			bool rngSetSeed = false, int rngSeed = 0);
+			int thin = 1, int burnin = 0, bool rngSetSeed = false, int rngSeed = 0);
 //	Metropolis(const Metropolis & m);
 //	Metropolis & operator= (const Metropolis &m);
 // 	~Metropolis();
@@ -64,6 +64,8 @@ class Metropolis
 
 	// settings
 	int outputBufferSize;
+	int thinSize;
+	int burnin;
 	int adaptationSampleSize;
 	double adaptationRate;
 	bool rngSetSeed;

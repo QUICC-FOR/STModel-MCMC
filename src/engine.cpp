@@ -32,21 +32,23 @@ namespace STMEngine {
 
 Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood,
-		EngineOutputLevel outLevel, bool rngSetSeed, int rngSeed) :
+		EngineOutputLevel outLevel, int thin, int burnin, bool rngSetSeed, int rngSeed) :
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 
 // objects that we own or share
-parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), 
-rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel),
+parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), burnin(burnin),
+rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSize(thin),
 
 // the parameters below have default values with no support for changing them
-outputBufferSize(10000), adaptationSampleSize(100), adaptationRate(1.1)
+outputBufferSize(500), adaptationSampleSize(100), adaptationRate(1.1)
 {
-
 	// check pointers
 	if(!queue || !lhood)
 		throw std::runtime_error("Metropolis: passed null pointer on construction");
+		
+	if(thin < 1)
+		throw std::runtime_error("Metropolis: thin interval must be greater than 0");
 }
 
 
@@ -57,22 +59,49 @@ void Metropolis::run_sampler(int n)
 	if(!parameters.adapted())
 		auto_adapt();
 
+	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
 	while(numCompleted < n) {
-		int sampleSize = ((n - numCompleted < outputBufferSize) ? (n - numCompleted) : 
-				outputBufferSize);
+		int sampleSize;
+		if(burninCompleted < burnin)
+		{
+			sampleSize = ( (burnin - burninCompleted < outputBufferSize) ? 
+					(burnin - burninCompleted) : outputBufferSize);
+		}
+		else
+		{
+			sampleSize = ((n - numCompleted < outputBufferSize) ? (n - numCompleted) : 
+					outputBufferSize);
+		}
 		currentSamples.reserve(sampleSize);
 		do_sample(sampleSize);
-		STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
-				STMOutput::OutputKeyType::POSTERIOR);
+		
+		if(burninCompleted < burnin)
+		{
+			burninCompleted += sampleSize;		
+		}
+		else
+		{
+			STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
+					STMOutput::OutputKeyType::posterior);
+			outputQueue->push(buffer);	// note that this may block if the queue is busy
+			numCompleted += sampleSize;		
+		}
+
 		currentSamples.clear();
-		outputQueue->push(buffer);	// note that this may block if the queue is busy
-		numCompleted += sampleSize;
 		
 		/* if desired: some output with the current time */
 		if(outputLevel >= EngineOutputLevel::Normal) {
-			std::cerr << timestamp() << "   MCMC Iteration " << numCompleted << " of " 
-					<< n << '\n';
+			if(numCompleted == 0)
+			{
+				std::cerr << timestamp() << "   MCMC burnin iteration " << burninCompleted
+						<< " of " << burnin << '\n';						
+			}
+			else
+			{
+				std::cerr << timestamp() << "   MCMC burnin iteration " << numCompleted << " of " 
+						<< n << '\n';			
+			}
 		}
 	}
 }
@@ -112,9 +141,9 @@ void Metropolis::auto_adapt()
 		}
 		adaptationSampleSize *= 1.25;
 	}
-	parameters.reset();
+//	parameters.reset(); // if disabled, this will include adaptation samples in the burnin
 	if(outputLevel >= EngineOutputLevel::Normal) {
-		std::cerr << timestamp() << "Adaptation completed successfully\n";
+		std::cerr << timestamp() << " Adaptation completed successfully\n";
 	}
 }
 
@@ -132,11 +161,15 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 	for(const auto & par : parNames)
 		numAccepted[par] = 0;
 
-	for(int i = 0; i < n; i++) {
-		// step through each parameter
-		for(const auto & par : parNames) {
-			STM::ParPair proposal = propose_parameter(par);
-			numAccepted[par] += select_parameter(proposal);
+	for(int i = 0; i < n; i++)
+	{
+		for(int j = 0; j < thinSize; j++)
+		{
+			// step through each parameter
+			for(const auto & par : parNames) {
+				STM::ParPair proposal = propose_parameter(par);
+				numAccepted[par] += select_parameter(proposal);
+			}
 		}
 		parameters.increment();
 		currentSamples.push_back(parameters.current_state());
@@ -169,7 +202,7 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 
 	std::map<STM::ParName, double> acceptanceRates;
 	for(const auto & par : parNames)
-		acceptanceRates[par] = double(numAccepted[par]) / n;
+		acceptanceRates[par] = double(numAccepted[par]) / (n*thinSize);
 	return acceptanceRates;
 }
 
