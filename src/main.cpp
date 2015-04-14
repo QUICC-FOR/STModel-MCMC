@@ -65,7 +65,8 @@ int main(int argc, char ** argv)
 	bool engineFinished = false;
 	std::thread engineThread (&STMEngine::Metropolis::run_sampler, 
 			STMEngine::Metropolis(inits, outQueue, likelihood, settings.verbose, 
-			settings.thin, settings.burnin), settings.maxIterations);
+			STMOutput::OutputOptions(settings.outDir, settings.outMethod), settings.thin, 
+			settings.burnin), settings.maxIterations);
 	std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 			STMOutput::OutputWorkerThread(outQueue, &engineFinished));
 	

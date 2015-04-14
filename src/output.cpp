@@ -16,16 +16,17 @@ std::map<OutputKeyType, bool> OutputBuffer::append =
 };
 
 
-OutputOptions::OutputOptions(std::string baseFileName, OutputMethodType method) :
-  filename(baseFileName), outputMethod(method)
-{ }
+OutputOptions::OutputOptions(std::string directory, OutputMethodType method, 
+	std::string baseFileName) : 
+	dirname(directory), filename(baseFileName), outputMethod(method)
+{ if(dirname.back() != '/') dirname = dirname + "/"; }
 
 
 OutputBuffer::OutputBuffer(const std::map<std::string, double> & data, 
 		const std::vector<std::string> & keyOrder, OutputKeyType key, 
 		OutputOptions options) : OutputOptions(options), dataWritten(false), keyType(key)
 {
-	if(keys.empty()) keys = keyOrder;
+	buffer_setup(keyOrder);
 	dat.push_back(data);
 }
 
@@ -34,7 +35,15 @@ OutputBuffer::OutputBuffer(const std::vector<std::map<std::string, double> > & d
 		const std::vector<std::string> & keyOrder, OutputKeyType key, 
 		OutputOptions options) : OutputOptions(options), dat(data), dataWritten(false),
 		keyType(key)
-{ 	if(keys.empty()) keys = keyOrder; }
+{ 	buffer_setup(keyOrder); }
+
+
+void OutputBuffer::buffer_setup(const std::vector<std::string> & keyOrder)
+{
+	if(keys.empty()) keys = keyOrder;
+	if(keyType == OutputKeyType::posterior)
+		filename = dirname + "posterior.csv";
+}
 
 
 void OutputBuffer::save()
@@ -90,7 +99,9 @@ std::ostream & OutputBuffer::set_output_stream(std::ofstream & file)
 		return stream;
 	}
 	else if(outputMethod == OutputMethodType::STDOUT)
+	{
 		return std::cout;
+	}
 }
 
 void OutputBuffer::cleanup_output_stream(std::ofstream & file)
