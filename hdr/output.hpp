@@ -57,11 +57,13 @@ enum class OutputMethodType {
 class OutputOptions
 {
 	public:
-	OutputOptions(std::string baseFileName = "STMOutput", 
-		OutputMethodType method = OutputMethodType::STDOUT);
+	OutputOptions(std::string directory = "STMOutput/", 
+		OutputMethodType method = OutputMethodType::STDOUT,
+		std::string baseFileName = "STMOutput");
 		
 	protected:
 	std::string filename;
+	std::string dirname;
 	OutputMethodType outputMethod;
 };
 
@@ -102,6 +104,7 @@ class OutputBuffer: protected OutputOptions
 	private:
 	std::ostream & set_output_stream(std::ofstream & file);
 	void cleanup_output_stream(std::ofstream & file);
+	void buffer_setup(const std::vector<std::string> & keyOrder);
 
 	static std::vector<std::string> keys;	// controls the order in which data are written
 	static bool headerWritten;

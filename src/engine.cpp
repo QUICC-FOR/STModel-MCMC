@@ -32,13 +32,15 @@ namespace STMEngine {
 
 Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood,
-		EngineOutputLevel outLevel, int thin, int burnin, bool rngSetSeed, int rngSeed) :
+		EngineOutputLevel outLevel, STMOutput::OutputOptions outOpt, int thin, int burnin, 
+		bool rngSetSeed, int rngSeed) :
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 
 // objects that we own or share
 parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), burnin(burnin),
 rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSize(thin),
+posteriorOptions(outOpt),
 
 // the parameters below have default values with no support for changing them
 outputBufferSize(500), adaptationSampleSize(100), adaptationRate(1.1)
@@ -56,7 +58,7 @@ void Metropolis::run_sampler(int n)
 {
 	set_up_rng();
 	
-	if(!parameters.adapted())
+	if(not parameters.adapted())
 		auto_adapt();
 
 	int burninCompleted = parameters.iteration();
@@ -83,7 +85,7 @@ void Metropolis::run_sampler(int n)
 		else
 		{
 			STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
-					STMOutput::OutputKeyType::posterior);
+					STMOutput::OutputKeyType::posterior, posteriorOptions);
 			outputQueue->push(buffer);	// note that this may block if the queue is busy
 			numCompleted += sampleSize;		
 		}
