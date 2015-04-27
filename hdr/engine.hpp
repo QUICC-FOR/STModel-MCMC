@@ -6,13 +6,9 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include "output.hpp"
 #include "parameters.hpp"
 #include "stmtypes.hpp"
-
-// forward declarations
-namespace STMOutput {
-	class OutputQueue;
-}
 
 namespace STMLikelihood {
 	class Likelihood;
@@ -35,7 +31,8 @@ class Metropolis
 	Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 			STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * 
 			const lhood, EngineOutputLevel outLevel = EngineOutputLevel::Normal, 
-			bool rngSetSeed = false, int rngSeed = 0);
+			STMOutput::OutputOptions outOpt = STMOutput::OutputOptions(),
+			int thin = 1, int burnin = 0, bool rngSetSeed = false, int rngSeed = 0);
 //	Metropolis(const Metropolis & m);
 //	Metropolis & operator= (const Metropolis &m);
 // 	~Metropolis();
@@ -64,11 +61,14 @@ class Metropolis
 
 	// settings
 	int outputBufferSize;
+	int thinSize;
+	int burnin;
 	int adaptationSampleSize;
 	double adaptationRate;
 	bool rngSetSeed;
 	int rngSeed;
 	EngineOutputLevel outputLevel;
+	STMOutput::OutputOptions posteriorOptions;
 };
 
 } // namespace

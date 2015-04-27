@@ -1,20 +1,27 @@
 
-load("inp/initForFit_rf_0.05.rdata")
+load("inp/initForFit_rf_0.31.rdata")
+
 cn = colnames(datSel)
 cn[cn == "st0"] = "initial"
 cn[cn == "st1"] = "final"
 cn[cn == "ENV1"] = "env1"
 cn[cn == "ENV2"] = "env2"
-cn[cn == "EB"] = "expectedB"
-cn[cn == "ET"] = "expectedT"
-cn[cn == "EM"] = "expectedM"
+cn[cn == "EB"] = "prevalenceB"
+cn[cn == "ET"] = "prevalenceT"
+cn[cn == "EM"] = "prevalenceM"
 cn[cn == "itime"] = "interval"
 
 colnames(datSel) = cn
-write.table(datSel, "inp/trans_0.05.txt", sep=",", row.names=FALSE)
+write.table(datSel, "inp/trans_0.3.txt", sep=",", row.names=FALSE)
 
-params = read.table("inp/GenSA_initForFit_rf_0.05.txt", header=FALSE, skip=1)
-colnames(params) = c("name", "initialValue")
-params$priorMean = rep(0, nrow(params))
-params$priorSD = rep(10000, nrow(params))
-write.table(params, "inp/inits_0.05.txt", sep=",", row.names=FALSE)
+params = data.frame(
+	name = names(params), 
+	initialValue = params,
+	samplerVariance = 0.4,
+	priorMean = 0,
+	priorSD = 10000,
+	priorDist = "Normal")
+write.table(params, "inp/inits_0.3.txt", sep=",", row.names=FALSE)
+
+
+# ./bin/stm4_mcmc -p inp/inits_0.3.txt -t inp/trans_0.3.txt -n 1 -i 2000 -b 0 -c 2 -v 3
