@@ -194,12 +194,11 @@ void Metropolis::serialize_all() const
 	serial << "{\n";
 	serial << parameters.serialize(sep);
 	serial << "}\n\n";
-/*	
+	
 	serial << "OutputOptions \n";
 	serial << "{\n";
-	serial << posteriorOptions->serialize(sep);
+	serial << posteriorOptions.serialize(sep);
 	serial << "}\n\n";
-*/
 
 	STMOutput::OutputBuffer buffer (serial.str(), STMOutput::OutputKeyType::resumeData, 
 			posteriorOptions);
@@ -211,7 +210,7 @@ std::string Metropolis::serialize(char sep) const
 {
 	std::ostringstream result;
 
-	result << "version" << sep << version()<< "\n";
+	result << "version" << sep << version() << "\n";
 	result << "outputBufferSize" << sep << outputBufferSize<< "\n";
 	result << "thinSize" << sep << thinSize<< "\n";
 	result << "burnin" << sep << burnin<< "\n";

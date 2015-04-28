@@ -32,6 +32,19 @@ bool OutputOptions::allow_appends(OutputKeyType key)
 }
 
 
+std::string OutputOptions::serialize(char s) const
+{
+	std::ostringstream result;
+
+	result << "filename" << s << filename << "\n";
+	result << "dirname" << s << dirname << "\n";
+	result << "outputMethod" << s << int(outputMethod) << "\n";
+		
+	return result.str();
+}
+
+
+
 OutputOptions::OutputOptions(std::string directory, OutputMethodType method, 
 	std::string baseFileName) : 
 	dirname(directory), filename(baseFileName), outputMethod(method)

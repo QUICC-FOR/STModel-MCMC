@@ -59,12 +59,13 @@ class OutputOptions
 	OutputOptions(std::string directory = "STMOutput/", 
 		OutputMethodType method = OutputMethodType::STDOUT,
 		std::string baseFileName = "STMOutput");
+	std::string serialize(char s) const;
 		
 	const OutputMethodType & method() { return outputMethod; }
 
 	protected:
 	static bool allow_appends(OutputKeyType key);
-
+	
 	std::string filename;
 	std::string dirname;
 	OutputMethodType outputMethod;
