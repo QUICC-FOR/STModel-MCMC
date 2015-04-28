@@ -39,8 +39,10 @@ class STModelParameters
 		initPars: the initial set of parameters; see the documentation for the Parameter
 		struct. This will give the model not only the starting values, but the parameter
 		names and starting variances
+		serialize() returns a representation of the object as a string suitable for saving to disk
 	*/
 	STModelParameters(const std::vector<ParameterSettings> & initPars);
+	std::string serialize(char s) const;
 
 
 	/* 

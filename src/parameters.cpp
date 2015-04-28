@@ -69,6 +69,45 @@ void STModelParameters::set_acceptance_rate(const STM::ParName & par, double rat
 { parSettings.at(par).acceptanceRate = rate; }
 
 
+std::string STModelParameters::serialize(char s) const
+{
+	std::ostringstream result;
+	std::vector<std::string> pNames = names();
+
+	result << "parNames";
+	for(const auto & v : pNames) result << s << v;
+	result << "\n";
+	
+	STM::ParMap initialVals, pVariance, pAcceptance;
+	for(const auto & pn : pNames)
+	{
+		const ParameterSettings & ps = parSettings[pn];
+		initialVals[pn] = ps.initialValue;
+		pVariance[pn] = ps.variance;
+		pAcceptance[pn] = ps.acceptanceRate;
+	}
+	
+	result << "initialVals";
+	for(const auto & pn : pNames) result << s << initialVals[pn];
+	result << "\nsamplerVariance";
+	for(const auto & pn : pNames) result << s << pVariance[pn];
+	result << "\nacceptanceRates";
+	for(const auto & pn : pNames) result << s << pAcceptance[pn];
+
+	result << "\ntargetAcceptanceInterval";
+	for(const auto & v : targetAcceptanceInterval)
+		result << s << v;
+	result << "\niterationCount" << s << iteration();
+	
+	result << "\nparameterValues";
+	for(const auto & pn : pNames) result << s << parameterValues.at(pn);
+	result << "\n";
+
+	return result.str();
+
+}
+
+
 std::string STModelParameters::str_acceptance_rates() const
 {
 	std::string red = "\033[1;31m";

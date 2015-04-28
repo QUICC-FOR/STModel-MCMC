@@ -189,12 +189,12 @@ void Metropolis::serialize_all() const
 	serial << "{\n";
 	serial << likelihood->serialize(sep, parameters.names());
 	serial << "}\n\n";
-/*	
+	
 	serial << "Parameters \n";
 	serial << "{\n";
-	serial << parameters->serialize(sep);
+	serial << parameters.serialize(sep);
 	serial << "}\n\n";
-	
+/*	
 	serial << "OutputOptions \n";
 	serial << "{\n";
 	serial << posteriorOptions->serialize(sep);

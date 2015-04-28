@@ -94,25 +94,25 @@ std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parN
 	result << "transitionFileName" << s << transitionFileName << "\n";
 	result << "likelihoodThreads" << s << likelihoodThreads << "\n";
 
-	std::vector<double> prMean, prSD;
-	std::vector<PriorFamilies> prFam;
+	STM::ParMap prMean, prSD;
+	std::map<std::string, PriorFamilies> prFam;
 	for(const auto & pn : parNames)
 	{
 		const PriorDist & p = priors.at(pn);
-		prMean.push_back(p.mean);
-		prSD.push_back(p.sd);
-		prFam.push_back(p.family);
+		prMean[pn] = p.mean;
+		prSD[pn] = p.sd;
+		prFam[pn] = p.family;
 	}
 
 	result << "priorMeans";
-	for(const auto & v : prMean)
-		result << s << v;
+	for(const auto & v : parNames)
+		result << s << prMean[v];
 	result << "\npriorSD";
-	for(const auto & v : prSD)
-		result << s << v;
+	for(const auto & v : parNames)
+		result << s << prSD[v];
 	result << "\npriorFamily";
-	for(const auto & v : prFam)
-		result << s << int(v);
+	for(const auto & v : parNames)
+		result << s << int(prFam[v]);
 	result << "\n";
 
 	
