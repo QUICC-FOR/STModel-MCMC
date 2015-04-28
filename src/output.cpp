@@ -51,6 +51,15 @@ OutputOptions::OutputOptions(std::string directory, OutputMethodType method,
 { if(dirname.back() != '/') dirname = dirname + "/"; }
 
 
+OutputOptions::OutputOptions(STM::SerializationData sd)
+{
+	filename = sd.at<std::string>("filename")[0];
+	dirname = sd.at<std::string>("dirname")[0];
+	int om = sd.at<int>("outputMethod")[0];
+	outputMethod = OutputMethodType(om);
+}
+
+
 OutputBuffer::OutputBuffer(const std::map<std::string, double> & data, 
 		const std::vector<std::string> & keyOrder, OutputKeyType key, 
 		OutputOptions options) : OutputOptions(options), keyType(key)

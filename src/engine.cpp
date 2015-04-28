@@ -211,15 +211,15 @@ std::string Metropolis::serialize(char sep) const
 	std::ostringstream result;
 
 	result << "version" << sep << version() << "\n";
-	result << "outputBufferSize" << sep << outputBufferSize<< "\n";
-	result << "thinSize" << sep << thinSize<< "\n";
-	result << "burnin" << sep << burnin<< "\n";
-	result << "adaptationSampleSize" << sep << adaptationSampleSize<< "\n";
-	result << "rngSetSeed" << sep << rngSetSeed<< "\n";
-	result << "rngSeed" << sep << rngSeed<< "\n";
-	result << "outputLevel" << sep << int(outputLevel)<< "\n";
-	result << "currentPosteriorProb" << sep << currentPosteriorProb<< "\n";
-	result << "adaptationRate" << sep << adaptationRate<< "\n";
+	result << "outputBufferSize" << sep << outputBufferSize << "\n";
+	result << "thinSize" << sep << thinSize << "\n";
+	result << "burnin" << sep << burnin << "\n";
+	result << "adaptationSampleSize" << sep << adaptationSampleSize << "\n";
+	result << "rngSetSeed" << sep << rngSetSeed << "\n";
+	result << "rngSeed" << sep << rngSeed << "\n";
+	result << "outputLevel" << sep << int(outputLevel) << "\n";
+	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
+	result << "adaptationRate" << sep << adaptationRate << "\n";
 	
 	return result.str();
 }

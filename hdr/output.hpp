@@ -35,6 +35,7 @@
 #include <chrono>
 #include <ostream>
 #include <fstream>
+#include "stmtypes.hpp"
 
 
 namespace STMOutput {
@@ -57,8 +58,9 @@ class OutputOptions
 {
 	public:
 	OutputOptions(std::string directory = "STMOutput/", 
-		OutputMethodType method = OutputMethodType::STDOUT,
-		std::string baseFileName = "STMOutput");
+			OutputMethodType method = OutputMethodType::STDOUT,
+			std::string baseFileName = "STMOutput");
+	OutputOptions(STM::SerializationData sd);
 	std::string serialize(char s) const;
 		
 	const OutputMethodType & method() { return outputMethod; }
