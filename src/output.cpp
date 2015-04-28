@@ -2,6 +2,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <thread>
+#include <sstream>
 
 namespace STMOutput {
 
@@ -11,9 +12,24 @@ std::vector<std::string> OutputBuffer::keys;
 std::map<OutputKeyType, bool> OutputBuffer::append = 
 {
 	{OutputKeyType::posterior, false},
-	{OutputKeyType::inits, false},
-	{OutputKeyType::samplerVariance, false}
+	{OutputKeyType::resumeData, false}
 };
+
+
+bool OutputOptions::allow_appends(OutputKeyType key)
+{
+	bool r = false;
+	switch(key)
+	{
+		case OutputKeyType::posterior:
+			r = true;
+			break;
+		case OutputKeyType::resumeData:
+			r = false;
+			break;
+	}
+	return r;
+}
 
 
 OutputOptions::OutputOptions(std::string directory, OutputMethodType method, 
@@ -24,7 +40,7 @@ OutputOptions::OutputOptions(std::string directory, OutputMethodType method,
 
 OutputBuffer::OutputBuffer(const std::map<std::string, double> & data, 
 		const std::vector<std::string> & keyOrder, OutputKeyType key, 
-		OutputOptions options) : OutputOptions(options), dataWritten(false), keyType(key)
+		OutputOptions options) : OutputOptions(options), keyType(key)
 {
 	buffer_setup(keyOrder);
 	dat.push_back(data);
@@ -33,16 +49,38 @@ OutputBuffer::OutputBuffer(const std::map<std::string, double> & data,
 
 OutputBuffer::OutputBuffer(const std::vector<std::map<std::string, double> > & data, 
 		const std::vector<std::string> & keyOrder, OutputKeyType key, 
-		OutputOptions options) : OutputOptions(options), dat(data), dataWritten(false),
-		keyType(key)
+		OutputOptions options) : OutputOptions(options), dat(data), keyType(key)
 { 	buffer_setup(keyOrder); }
 
 
-void OutputBuffer::buffer_setup(const std::vector<std::string> & keyOrder)
+OutputBuffer::OutputBuffer(const std::string & rawOutput, OutputKeyType key, OutputOptions options) :
+		OutputOptions(options), outputString(rawOutput), keyType(key)
 {
+	buffer_setup();
+}
+
+
+
+void OutputBuffer::buffer_setup()
+{
+	dataWritten = false;
+	filename = dirname;
+	switch (keyType)
+	{
+		case OutputKeyType::posterior:
+			filename += "posterior.csv";
+			break;
+		case OutputKeyType::resumeData:
+			filename += "resumeData.txt";
+			break;
+	}
+}
+
+
+void OutputBuffer::buffer_setup(const std::vector<std::string> & keyOrder)
+{ 
+	buffer_setup();
 	if(keys.empty()) keys = keyOrder;
-	if(keyType == OutputKeyType::posterior)
-		filename = dirname + "posterior.csv";
 }
 
 
@@ -59,27 +97,36 @@ void OutputBuffer::save()
 	else
 	{
 		// stdout and CSV are very similar, so they are handled at the same time
-		std::vector<std::string> outData;
+		
+		if(outputString.empty())
+			prepare_output_string();
+		
+		std::ofstream csvOutputStream;
+		std::ostream & outputStream = set_output_stream(csvOutputStream);
+		outputStream << outputString;
+		cleanup_output_stream(csvOutputStream);
+	}	
+	dataWritten = true;
+}
+
+
+void OutputBuffer::prepare_output_string()
+{
+	std::ostringstream ss;
+	if(keyType == OutputKeyType::posterior)
+	{
 		if(not headerWritten)
 		{
-			outData.push_back(vec_to_str(keys));
+			ss << vec_to_str(keys) << "\n";
 			headerWritten = true;
 		}	
 		for(const auto & row : dat) {
 			std::vector<double> vals;
 			for(const auto & name : keys)
 				vals.push_back(row.at(name));
-			outData.push_back(vec_to_str(vals));		
+			ss << vec_to_str(vals) << "\n";		
 		}
-		
-		std::ofstream csvOutputStream;
-		std::ostream & outputStream = set_output_stream(csvOutputStream);
-		for(const auto &d : outData)
-			outputStream << d << '\n';
-		cleanup_output_stream(csvOutputStream);
-	}	
-	
-	dataWritten = true;
+	}
 }
 
 std::ostream & OutputBuffer::set_output_stream(std::ofstream & file)
@@ -91,7 +138,7 @@ std::ostream & OutputBuffer::set_output_stream(std::ofstream & file)
 		else
 		{
 			file.open(filename);
-			append[keyType] = true;
+			append[keyType] = true && allow_appends(keyType);
 		}	
 		if(not file.is_open())
 			throw(std::runtime_error("Could not open file: " + filename));

@@ -25,6 +25,7 @@ enum class EngineOutputLevel {
 	ExtraVerbose=4		// prints parameter values at each iteration
 };
 
+
 class Metropolis
 {
 	public:
@@ -48,27 +49,37 @@ class Metropolis
 	double log_posterior_prob(const STMParameters::STModelParameters & par, 
 			const STM::ParPair & pair) const;
 	void set_up_rng();
+	void serialize_all() const;
+	std::string serialize(char sep) const;
+	static std::string version();
+
 	
 	// pointers to objects that the engine doesn't own, but that it uses
 	STMOutput::OutputQueue * outputQueue;
 	STMLikelihood::Likelihood * likelihood;
 
 	// objects that the engine owns
+	
+	// data and settings that should be saved in resumeData
 	STMParameters::STModelParameters parameters;
-	std::vector<STM::ParMap> currentSamples;
 	std::shared_ptr<gsl_rng> rng;
 	double currentPosteriorProb;
+	double adaptationRate;
 
 	// settings
 	int outputBufferSize;
 	int thinSize;
 	int burnin;
 	int adaptationSampleSize;
-	double adaptationRate;
 	bool rngSetSeed;
 	int rngSeed;
 	EngineOutputLevel outputLevel;
 	STMOutput::OutputOptions posteriorOptions;
+	
+	// data that do not need to be saved in resumeData
+	std::string resumeDataFileName;
+	std::vector<STM::ParMap> currentSamples;
+	bool saveResumeData;
 };
 
 } // namespace

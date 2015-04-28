@@ -15,8 +15,8 @@ STMInputHelper::STMInputHelper (const char * initFileName, const char * transFil
 	transFile.open(transFileName);
 	{
 		std::stringstream err;
-		if(!initFile.is_open()) err << "Failed to open " << initFileName << ">\n";
-		if(!transFile.is_open()) err << "Failed to open " << transFileName << ">\n";
+		if(!initFile.is_open()) err << "Failed to open " << initFileName << "\n";
+		if(!transFile.is_open()) err << "Failed to open " << transFileName << "\n";
 		if(!err.str().empty()) throw std::runtime_error(err.str());
 	}
 

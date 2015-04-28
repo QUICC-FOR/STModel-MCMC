@@ -59,7 +59,7 @@ int main(int argc, char ** argv)
 	// create and initialize main objects
 	STMOutput::OutputQueue * outQueue = new STMOutput::OutputQueue;
 	STMLikelihood::Likelihood * likelihood = new STMLikelihood::Likelihood 
-			(transitionData, priors, settings.numThreads);
+			(transitionData, settings.transFileName, priors, settings.numThreads);
 
 	// spawn engine and outputworker in threads
 	bool engineFinished = false;

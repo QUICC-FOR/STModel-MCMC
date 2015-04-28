@@ -42,8 +42,10 @@ using std::vector;
 namespace STMLikelihood {
 
 Likelihood::Likelihood(const std::vector<STMModel::STMTransition> & transitionData, 
+		const std::string & transitionDataOriginFile, 
 		const std::map<std::string, PriorDist> & pr, unsigned int numThreads) : 
-		transitions(transitionData), priors(pr), likelihoodThreads(numThreads)
+		transitions(transitionData), transitionFileName(transitionDataOriginFile),
+		priors(pr), likelihoodThreads(numThreads)
 { }
 
 double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters & params)
@@ -83,4 +85,39 @@ double Likelihood::log_prior(const std::pair<std::string, double> & param) const
 
 	return std::log(val);
 }
+
+
+std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parNames) const
+{
+	std::ostringstream result;
+
+	result << "transitionFileName" << s << transitionFileName << "\n";
+	result << "likelihoodThreads" << s << likelihoodThreads << "\n";
+
+	std::vector<double> prMean, prSD;
+	std::vector<PriorFamilies> prFam;
+	for(const auto & pn : parNames)
+	{
+		const PriorDist & p = priors.at(pn);
+		prMean.push_back(p.mean);
+		prSD.push_back(p.sd);
+		prFam.push_back(p.family);
+	}
+
+	result << "priorMeans";
+	for(const auto & v : prMean)
+		result << s << v;
+	result << "\npriorSD";
+	for(const auto & v : prSD)
+		result << s << v;
+	result << "\npriorFamily";
+	for(const auto & v : prFam)
+		result << s << int(v);
+	result << "\n";
+
+	
+	return result.str();
+}
+
+
 } //!namespace Likelihood

@@ -8,8 +8,9 @@
 #include <algorithm> // std::random_shuffle
 #include <iostream>
 #include <iomanip>
+#include <sstream>
+#include <stdexcept>
 
-using std::vector;
 
 namespace {
 	std::string timestamp()
@@ -22,9 +23,12 @@ namespace {
 		std::string ts(fmtTime);
 		return ts;		
 	}
+
+	std::string engineVersion = "Metropolis v0.9";
 }
 
 namespace STMEngine {
+
 
 /*
 	Implementation of public functions
@@ -51,11 +55,23 @@ outputBufferSize(500), adaptationSampleSize(100), adaptationRate(1.1)
 		
 	if(thin < 1)
 		throw std::runtime_error("Metropolis: thin interval must be greater than 0");
+		
+	if(posteriorOptions.method() == STMOutput::OutputMethodType::STDOUT)
+		saveResumeData = false;
+	else
+		saveResumeData = true;
+		
+	serialize_all();
 }
+
+
+std::string Metropolis::version()
+{ return engineVersion; }
 
 
 void Metropolis::run_sampler(int n)
 {
+	return;
 	set_up_rng();
 	
 	if(not parameters.adapted())
@@ -91,6 +107,8 @@ void Metropolis::run_sampler(int n)
 		}
 
 		currentSamples.clear();
+		if(saveResumeData)
+			serialize_all();
 		
 		/* if desired: some output with the current time */
 		if(outputLevel >= EngineOutputLevel::Normal) {
@@ -107,6 +125,8 @@ void Metropolis::run_sampler(int n)
 		}
 	}
 }
+
+
 
 
 /*
@@ -142,12 +162,69 @@ void Metropolis::auto_adapt()
 			std::cerr << "    " << parameters.str_sampling_variance() << "\n";
 		}
 		adaptationSampleSize *= 1.25;
+		currentSamples.clear();
+		if(saveResumeData)
+			serialize_all();
 	}
 //	parameters.reset(); // if disabled, this will include adaptation samples in the burnin
 	if(outputLevel >= EngineOutputLevel::Normal) {
 		std::cerr << timestamp() << " Adaptation completed successfully\n";
 	}
 }
+
+void Metropolis::serialize_all() const
+{
+	if(!currentSamples.empty())
+		throw(std::runtime_error("Metropolis: tried to serialize before saving sample data"));
+
+	char sep = ' ';
+	std::ostringstream serial;
+	
+	serial << "Metropolis \n";
+	serial << "{\n";
+	serial << serialize(sep);
+	serial << "}\n\n";
+
+	serial << "Likelihood \n";
+	serial << "{\n";
+	serial << likelihood->serialize(sep, parameters.names());
+	serial << "}\n\n";
+/*	
+	serial << "Parameters \n";
+	serial << "{\n";
+	serial << parameters->serialize(sep);
+	serial << "}\n\n";
+	
+	serial << "OutputOptions \n";
+	serial << "{\n";
+	serial << posteriorOptions->serialize(sep);
+	serial << "}\n\n";
+*/
+
+	STMOutput::OutputBuffer buffer (serial.str(), STMOutput::OutputKeyType::resumeData, 
+			posteriorOptions);
+	outputQueue->push(buffer);	
+}
+
+
+std::string Metropolis::serialize(char sep) const
+{
+	std::ostringstream result;
+
+	result << "version" << sep << version()<< "\n";
+	result << "outputBufferSize" << sep << outputBufferSize<< "\n";
+	result << "thinSize" << sep << thinSize<< "\n";
+	result << "burnin" << sep << burnin<< "\n";
+	result << "adaptationSampleSize" << sep << adaptationSampleSize<< "\n";
+	result << "rngSetSeed" << sep << rngSetSeed<< "\n";
+	result << "rngSeed" << sep << rngSeed<< "\n";
+	result << "outputLevel" << sep << int(outputLevel)<< "\n";
+	result << "currentPosteriorProb" << sep << currentPosteriorProb<< "\n";
+	result << "adaptationRate" << sep << adaptationRate<< "\n";
+	
+	return result.str();
+}
+
 
 
 std::map<STM::ParName, double> Metropolis::do_sample(int n)
