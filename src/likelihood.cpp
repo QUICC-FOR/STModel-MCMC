@@ -48,6 +48,58 @@ Likelihood::Likelihood(const std::vector<STMModel::STMTransition> & transitionDa
 		priors(pr), likelihoodThreads(numThreads)
 { }
 
+
+Likelihood::Likelihood(STM::SerializationData sd, const std::vector<std::string> &parNames,
+		const std::vector<STMModel::STMTransition> & transitionData) : 
+		transitions(transitionData)
+{
+	transitionFileName = sd.at<std::string>("transitionFileName")[0];
+	likelihoodThreads = sd.at<int>("likelihoodThreads")[0];
+	std::vector<double> prMean = sd.at<double>("priorMeans");
+	std::vector<double> prSD = sd.at<double>("priorSD");
+	std::vector<int> prFam = sd.at<int>("priorFamily");
+
+	for(int i = 0; i < parNames.size(); i++)
+	{
+		priors[parNames[i]] = PriorDist (prMean.at(i), prSD.at(i), 
+				PriorFamilies(prFam.at(i)));
+	}
+}
+
+
+std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parNames) const
+{
+	std::ostringstream result;
+
+	result << "transitionFileName" << s << transitionFileName << "\n";
+	result << "likelihoodThreads" << s << likelihoodThreads << "\n";
+
+	STM::ParMap prMean, prSD;
+	std::map<std::string, PriorFamilies> prFam;
+	for(const auto & pn : parNames)
+	{
+		const PriorDist & p = priors.at(pn);
+		prMean[pn] = p.mean;
+		prSD[pn] = p.sd;
+		prFam[pn] = p.family;
+	}
+
+	result << "priorMeans";
+	for(const auto & v : parNames)
+		result << s << prMean[v];
+	result << "\npriorSD";
+	for(const auto & v : parNames)
+		result << s << prSD[v];
+	result << "\npriorFamily";
+	for(const auto & v : parNames)
+		result << s << int(prFam[v]);
+	result << "\n";
+
+	
+	return result.str();
+}
+
+
 double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters & params)
 {
 	double sumlogl = 0;
@@ -84,39 +136,6 @@ double Likelihood::log_prior(const std::pair<std::string, double> & param) const
 	}
 
 	return std::log(val);
-}
-
-
-std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parNames) const
-{
-	std::ostringstream result;
-
-	result << "transitionFileName" << s << transitionFileName << "\n";
-	result << "likelihoodThreads" << s << likelihoodThreads << "\n";
-
-	STM::ParMap prMean, prSD;
-	std::map<std::string, PriorFamilies> prFam;
-	for(const auto & pn : parNames)
-	{
-		const PriorDist & p = priors.at(pn);
-		prMean[pn] = p.mean;
-		prSD[pn] = p.sd;
-		prFam[pn] = p.family;
-	}
-
-	result << "priorMeans";
-	for(const auto & v : parNames)
-		result << s << prMean[v];
-	result << "\npriorSD";
-	for(const auto & v : parNames)
-		result << s << prSD[v];
-	result << "\npriorFamily";
-	for(const auto & v : parNames)
-		result << s << int(prFam[v]);
-	result << "\n";
-
-	
-	return result.str();
 }
 
 
