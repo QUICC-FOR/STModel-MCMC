@@ -26,8 +26,9 @@ struct ParameterSettings
 	
 	ParameterSettings() {}
 	
-	ParameterSettings(STM::ParName parName, STM::ParValue init, double var = 1): 
-			name(parName), initialValue(init), variance(var), acceptanceRate(0) {}
+	ParameterSettings(STM::ParName parName, STM::ParValue init, double var = 1, 
+			double acceptanceRate = 0): name(parName), initialValue(init), variance(var), 
+			acceptanceRate(acceptanceRate) {}
 };
 
 
@@ -42,6 +43,7 @@ class STModelParameters
 		serialize() returns a representation of the object as a string suitable for saving to disk
 	*/
 	STModelParameters(const std::vector<ParameterSettings> & initPars);
+	STModelParameters(STM::SerializationData sd);
 	std::string serialize(char s) const;
 
 

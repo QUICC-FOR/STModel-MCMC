@@ -53,20 +53,24 @@ STModelParameters::STModelParameters(const std::vector<ParameterSettings> & init
 }
 
 
-const std::vector<STM::ParName> & STModelParameters::names() const
-{ return parNames; }
-
-	
-void STModelParameters::set_acceptance_rates(const std::map<STM::ParName, double> 
-		& rates)
+STModelParameters::STModelParameters(STM::SerializationData sd)
 {
-	for(const auto & p : rates)
-		set_acceptance_rate(p.first, p.second);
+	STModelParameters::parNames = sd.at<STM::ParName>("parNames");
+	std::vector<STM::ParValue> inits = sd.at<STM::ParValue>("initialVals");
+	std::vector<double> var = sd.at<double>("samplerVariance");
+	std::vector<double> accept = sd.at<double>("acceptanceRates");
+	std::vector<STM::ParValue> vals = sd.at<STM::ParValue>("parameterValues");
+	for(int i = 0; i < parNames.size(); i++)
+	{
+		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], var[i], 
+				accept[i]);
+		parameterValues[parNames[i]] = vals[i];
+	}
+	
+	STModelParameters::targetAcceptanceInterval = sd.at<double>("targetAcceptanceInterval");
+	iterationCount = sd.at<double>("iterationCount")[0];
+	
 }
-
-
-void STModelParameters::set_acceptance_rate(const STM::ParName & par, double rate)
-{ parSettings.at(par).acceptanceRate = rate; }
 
 
 std::string STModelParameters::serialize(char s) const
@@ -106,6 +110,23 @@ std::string STModelParameters::serialize(char s) const
 	return result.str();
 
 }
+
+
+
+const std::vector<STM::ParName> & STModelParameters::names() const
+{ return parNames; }
+
+	
+void STModelParameters::set_acceptance_rates(const std::map<STM::ParName, double> 
+		& rates)
+{
+	for(const auto & p : rates)
+		set_acceptance_rate(p.first, p.second);
+}
+
+
+void STModelParameters::set_acceptance_rate(const STM::ParName & par, double rate)
+{ parSettings.at(par).acceptanceRate = rate; }
 
 
 std::string STModelParameters::str_acceptance_rates() const
