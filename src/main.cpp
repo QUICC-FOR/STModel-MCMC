@@ -19,6 +19,7 @@ struct ModelSettings
 	int thin;
 	int burnin;
 	int numThreads;
+	unsigned int targetInterval;
 	STMOutput::OutputMethodType outMethod;
 	std::string outDir;
 	int maxIterations;
@@ -29,8 +30,8 @@ struct ModelSettings
 	
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
 			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
-			burnin(0), numThreads(8), outMethod(STMOutput::OutputMethodType::CSV),
-			outDir("output"), resume(false), resumeFile("") {}
+			burnin(0), targetInterval(1), numThreads(8), outDir("output"), resume(false),
+			outMethod(STMOutput::OutputMethodType::CSV), resumeFile("") {}
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -84,7 +85,8 @@ int main(int argc, char ** argv)
 			exit(1);
 		}
 		likelihood = new STMLikelihood::Likelihood 
-			(transitionData, settings.transFileName, priors, settings.numThreads);
+			(transitionData, settings.transFileName, priors, settings.numThreads,
+					 settings.targetInterval);
 		std::cerr << "Built likelihood\n";
 	}
 
@@ -140,7 +142,7 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hsr:p:t:o:n:i:b:c:v:")) != -1)
+	while((thearg = getopt(argc, argv, "hsr:p:t:o:n:i:b:l:c:v:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -172,6 +174,9 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 			case 'b':
 				s.burnin = atoi(optarg);
 				break;
+			case 'l':
+				s.targetInterval = atoi(optarg);
+				break;
 			case 'c':
 				s.numThreads = atoi(optarg);
 				break;
@@ -202,6 +207,7 @@ void print_help()
 	std::cerr << "    -i <integer>:   specifies the number of mcmc iterations (after adaptation)\n";
 	std::cerr << "    -b <integer>:   set the number of burn in samples\n";
 	std::cerr << "    -c <integer>:   set the number of cores on which to compute the model (default 8)\n";
+	std::cerr << "    -l <integer>:   set the target transition interval (in years) for the parameters (default 1)\n";
 	std::cerr << "    -v <integer>:   set verbosity; control level of output as follows:\n";	
 	std::cerr << "                         0: Quiet; print nothing\n";	
 	std::cerr << "                         1: Normal; only print status messages\n";	

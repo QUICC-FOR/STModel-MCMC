@@ -64,7 +64,8 @@ class Likelihood {
 	public:
   	Likelihood(const std::vector<STMModel::STMTransition> & transitionData,
   			const std::string & transitionDataOriginFile,
-  			const std::map<std::string, PriorDist> & pr, unsigned int numThreads = 8);
+  			const std::map<std::string, PriorDist> & pr, unsigned int numThreads = 8,
+  			int parameterInterval = 1);
 	Likelihood(STMInput::SerializationData sd, const std::vector<std::string> &parNames,
 			const std::vector<STMModel::STMTransition> & transitionData);
 	double compute_log_likelihood(const STMParameters::STModelParameters & params);
@@ -76,6 +77,7 @@ class Likelihood {
 	std::map<std::string, PriorDist> priors;
 	unsigned int likelihoodThreads;
 	std::string transitionFileName;		// from where did the transition data originate?
+	unsigned int targetInterval;
 };
 
 } // !STMLikelihood namespace
