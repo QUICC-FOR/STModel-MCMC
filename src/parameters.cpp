@@ -130,29 +130,38 @@ void STModelParameters::set_acceptance_rate(const STM::ParName & par, double rat
 { parSettings.at(par).acceptanceRate = rate; }
 
 
-std::string STModelParameters::str_acceptance_rates() const
+std::string STModelParameters::str_acceptance_rates(bool inColor) const
 {
-	std::string red = "\033[1;31m";
-	std::string cyan = "\033[1;36m";
-	std::string normal = "\033[0m";
 	std::stringstream res;
 	res << std::fixed;
 	res.precision(3);
-	res << "[ ";
+
+	std::string red = "\033[1;31m";
+	std::string cyan = "\033[1;36m";
+	std::string normal = "\033[0m";
+
+	if(inColor)
+		res << "[ ";
 	for(const auto ps: parSettings) {
-		if(not_adapted(ps.first))
-			res << red;
-		else
-			res << cyan;
+		if(inColor)
+		{
+			if(not_adapted(ps.first))
+				res << red;
+			else
+				res << cyan;
+		}
 		res << ps.second.acceptanceRate << " ";
 	}
-	res << normal;
-	res << "]";
+	if(inColor)
+	{
+		res << normal;
+		res << "]";
+	}
 	return res.str();
 }
 
 
-std::string STModelParameters::str_sampling_variance() const
+std::string STModelParameters::str_sampling_variance(bool inColor) const
 {
 	std::string red = "\033[1;31m";
 	std::string cyan = "\033[1;36m";
@@ -160,16 +169,23 @@ std::string STModelParameters::str_sampling_variance() const
 	std::stringstream res;
 	res << std::fixed;
 	res.precision(3);
-	res << "[ ";
+	if(inColor)
+		res << "[ ";
 	for(const auto ps: parSettings) {
-		if(not_adapted(ps.first))
-			res << red;
-		else
-			res << cyan;
+		if(inColor)
+		{
+			if(not_adapted(ps.first))
+				res << red;
+			else
+				res << cyan;
+		}
 		res << ps.second.variance << " ";
 	}
-	res << normal;
-	res << "]";
+	if(inColor)
+	{
+		res << normal;
+		res << "]";
+	}
 	return res.str();
 }
 

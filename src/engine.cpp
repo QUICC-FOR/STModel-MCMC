@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <unistd.h>
 #include <gsl/gsl_randist.h>
 
 
@@ -191,9 +192,9 @@ void Metropolis::auto_adapt()
 		}
 		if(outputLevel >= EngineOutputLevel::Talkative) {
 			std::cerr << "\n    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
-			std::cerr << "    " << parameters.str_acceptance_rates() << "\n";
+			std::cerr << "    " << parameters.str_acceptance_rates(isatty(fileno(stderr))) << "\n";
 			std::cerr << "    sampler variance:\n";
-			std::cerr << "    " << parameters.str_sampling_variance() << "\n";
+			std::cerr << "    " << parameters.str_sampling_variance(isatty(fileno(stderr))) << "\n";
 		}
 		adaptationSampleSize *= 1.25;
 		currentSamples.clear();
