@@ -161,6 +161,7 @@ void OutputBuffer::prepare_output_string()
 			ss << vec_to_str(vals) << "\n";		
 		}
 	}
+	outputString = ss.str();
 }
 
 std::ostream & OutputBuffer::set_output_stream(std::ofstream & file)
@@ -168,7 +169,9 @@ std::ostream & OutputBuffer::set_output_stream(std::ofstream & file)
 	if(outputMethod == OutputMethodType::CSV)
 	{
 		if(append.at(keyType))
+		{
 			file.open(filename, std::ofstream::out | std::ofstream::app);
+		}
 		else
 		{
 			file.open(filename);
@@ -188,7 +191,9 @@ std::ostream & OutputBuffer::set_output_stream(std::ofstream & file)
 void OutputBuffer::cleanup_output_stream(std::ofstream & file)
 {
 	if(outputMethod == OutputMethodType::CSV and file.is_open())
+	{
 		file.close();
+	}
 }
 
 
