@@ -108,8 +108,8 @@ void Metropolis::run_sampler(int n)
 {
 	set_up_rng();
 
-//	if(not parameters.adapted())
-//		auto_adapt();
+if(not parameters.adapted())
+	auto_adapt();
 
 	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
