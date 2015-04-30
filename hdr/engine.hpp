@@ -2,7 +2,6 @@
 #define STM_ENGINE_H
 
 #include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
 #include <vector>
 #include <map>
 #include <memory>
@@ -14,6 +13,10 @@ namespace STMLikelihood {
 	class Likelihood;
 }
 
+namespace STMInput
+{
+	class SerializationData;
+}
 
 namespace STMEngine {
 
@@ -34,6 +37,8 @@ class Metropolis
 			const lhood, EngineOutputLevel outLevel = EngineOutputLevel::Normal, 
 			STMOutput::OutputOptions outOpt = STMOutput::OutputOptions(),
 			int thin = 1, int burnin = 0, bool rngSetSeed = false, int rngSeed = 0);
+	Metropolis(std::map<std::string, STMInput::SerializationData> & sd, 
+			STMLikelihood::Likelihood * const lhood, STMOutput::OutputQueue * const queue);
 //	Metropolis(const Metropolis & m);
 //	Metropolis & operator= (const Metropolis &m);
 // 	~Metropolis();
@@ -77,7 +82,6 @@ class Metropolis
 	STMOutput::OutputOptions posteriorOptions;
 	
 	// data that do not need to be saved in resumeData
-	std::string resumeDataFileName;
 	std::vector<STM::ParMap> currentSamples;
 	bool saveResumeData;
 };

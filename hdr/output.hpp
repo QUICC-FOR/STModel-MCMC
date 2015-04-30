@@ -37,6 +37,11 @@
 #include <fstream>
 #include "stmtypes.hpp"
 
+namespace STMInput
+{
+	class SerializationData;
+}
+
 
 namespace STMOutput {
 
@@ -60,7 +65,7 @@ class OutputOptions
 	OutputOptions(std::string directory = "STMOutput/", 
 			OutputMethodType method = OutputMethodType::STDOUT,
 			std::string baseFileName = "STMOutput");
-	OutputOptions(STM::SerializationData sd);
+	OutputOptions(STMInput::SerializationData & sd);
 	std::string serialize(char s) const;
 		
 	const OutputMethodType & method() { return outputMethod; }
@@ -106,6 +111,8 @@ class OutputBuffer: protected OutputOptions
 		note that consecutive calls to save() will not duplicate the output
 	*/
 	void save();
+	static void setup_resume(bool header);
+	static bool posterior_started();
 
 
 	private:

@@ -1,4 +1,5 @@
 #include "../hdr/output.hpp"
+#include "../hdr/input.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <thread>
@@ -6,7 +7,7 @@
 
 namespace STMOutput {
 
-// static variables
+// static variables and functions
 bool OutputBuffer::headerWritten = false;
 std::vector<std::string> OutputBuffer::keys;
 std::map<OutputKeyType, bool> OutputBuffer::append = 
@@ -14,6 +15,15 @@ std::map<OutputKeyType, bool> OutputBuffer::append =
 	{OutputKeyType::posterior, false},
 	{OutputKeyType::resumeData, false}
 };
+
+void OutputBuffer::setup_resume(bool header)
+{
+	if(header) OutputBuffer::append[OutputKeyType::posterior] = true;
+	OutputBuffer::headerWritten = header;
+}
+
+bool OutputBuffer::posterior_started()
+{ return OutputBuffer::headerWritten; }
 
 
 bool OutputOptions::allow_appends(OutputKeyType key)
@@ -37,6 +47,7 @@ std::string OutputOptions::serialize(char s) const
 	std::ostringstream result;
 
 	result << "filename" << s << filename << "\n";
+	result << "posteriorStarted" << s << OutputBuffer::posterior_started() << "\n";
 	result << "dirname" << s << dirname << "\n";
 	result << "outputMethod" << s << int(outputMethod) << "\n";
 		
@@ -51,12 +62,13 @@ OutputOptions::OutputOptions(std::string directory, OutputMethodType method,
 { if(dirname.back() != '/') dirname = dirname + "/"; }
 
 
-OutputOptions::OutputOptions(STM::SerializationData sd)
+OutputOptions::OutputOptions(STMInput::SerializationData & sd)
 {
-	filename = sd.at<std::string>("filename")[0];
-	dirname = sd.at<std::string>("dirname")[0];
-	int om = sd.at<int>("outputMethod")[0];
+	filename = sd.at("filename")[0];
+	dirname = sd.at("dirname")[0];
+	int om = STMInput::str_convert<int>(sd.at("outputMethod")[0]);
 	outputMethod = OutputMethodType(om);
+	OutputBuffer::setup_resume(STMInput::str_convert<bool>(sd.at("posteriorStarted")[0]));
 }
 
 
@@ -160,7 +172,7 @@ std::ostream & OutputBuffer::set_output_stream(std::ofstream & file)
 		else
 		{
 			file.open(filename);
-			append[keyType] = true && allow_appends(keyType);
+			append[keyType] = allow_appends(keyType);
 		}	
 		if(not file.is_open())
 			throw(std::runtime_error("Could not open file: " + filename));

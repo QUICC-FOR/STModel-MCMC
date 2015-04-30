@@ -3,9 +3,16 @@
 
 #include <map>
 #include <vector>
-#include <exception>
+// #include <exception>
 #include <string>
 #include "stmtypes.hpp"
+
+
+namespace STMInput
+{
+	class SerializationData;
+}
+
 
 namespace STMParameters {
 
@@ -43,7 +50,8 @@ class STModelParameters
 		serialize() returns a representation of the object as a string suitable for saving to disk
 	*/
 	STModelParameters(const std::vector<ParameterSettings> & initPars);
-	STModelParameters(STM::SerializationData sd);
+	STModelParameters(STMInput::SerializationData & sd);
+	STModelParameters();
 	std::string serialize(char s) const;
 
 

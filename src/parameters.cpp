@@ -26,6 +26,7 @@ STModel-MCMC : parameters.cpp
 #include <sstream>
 
 #include "../hdr/parameters.hpp"
+#include "../hdr/input.hpp"
 
 namespace STMParameters
 {
@@ -53,13 +54,13 @@ STModelParameters::STModelParameters(const std::vector<ParameterSettings> & init
 }
 
 
-STModelParameters::STModelParameters(STM::SerializationData sd)
+STModelParameters::STModelParameters(STMInput::SerializationData & sd)
 {
-	STModelParameters::parNames = sd.at<STM::ParName>("parNames");
-	std::vector<STM::ParValue> inits = sd.at<STM::ParValue>("initialVals");
-	std::vector<double> var = sd.at<double>("samplerVariance");
-	std::vector<double> accept = sd.at<double>("acceptanceRates");
-	std::vector<STM::ParValue> vals = sd.at<STM::ParValue>("parameterValues");
+	STModelParameters::parNames = sd.at("parNames");
+	std::vector<STM::ParValue> inits = STMInput::str_convert<STM::ParValue>(sd.at("initialVals"));
+	std::vector<double> var = STMInput::str_convert<double>(sd.at("samplerVariance"));
+	std::vector<double> accept = STMInput::str_convert<double>(sd.at("acceptanceRates"));
+	std::vector<STM::ParValue> vals = STMInput::str_convert<STM::ParValue>(sd.at("parameterValues"));
 	for(int i = 0; i < parNames.size(); i++)
 	{
 		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], var[i], 
@@ -67,8 +68,8 @@ STModelParameters::STModelParameters(STM::SerializationData sd)
 		parameterValues[parNames[i]] = vals[i];
 	}
 	
-	STModelParameters::targetAcceptanceInterval = sd.at<double>("targetAcceptanceInterval");
-	iterationCount = sd.at<double>("iterationCount")[0];
+	STModelParameters::targetAcceptanceInterval = STMInput::str_convert<double>(sd.at("targetAcceptanceInterval"));
+	iterationCount = STMInput::str_convert<double>(sd.at("iterationCount")[0]);
 	
 }
 

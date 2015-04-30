@@ -38,6 +38,11 @@ namespace STMParameters {
 	struct TransitionRates;
 }
 
+namespace STMInput
+{
+	class SerializationData;
+}
+
 
 namespace STMLikelihood {
 enum class PriorFamilies
@@ -60,7 +65,7 @@ class Likelihood {
   	Likelihood(const std::vector<STMModel::STMTransition> & transitionData,
   			const std::string & transitionDataOriginFile,
   			const std::map<std::string, PriorDist> & pr, unsigned int numThreads = 8);
-	Likelihood(STM::SerializationData sd, const std::vector<std::string> &parNames,
+	Likelihood(STMInput::SerializationData sd, const std::vector<std::string> &parNames,
 			const std::vector<STMModel::STMTransition> & transitionData);
 	double compute_log_likelihood(const STMParameters::STModelParameters & params);
 	double log_prior(const std::pair<std::string, double> & param) const;

@@ -33,9 +33,11 @@
 #include <cmath>
 #include <algorithm>
 #include <omp.h>
+#include <iostream>
 #include <gsl/gsl_randist.h>
 #include "../hdr/likelihood.hpp"
 #include "../hdr/parameters.hpp"
+#include "../hdr/input.hpp"
 
 using std::vector;
 
@@ -49,15 +51,15 @@ Likelihood::Likelihood(const std::vector<STMModel::STMTransition> & transitionDa
 { }
 
 
-Likelihood::Likelihood(STM::SerializationData sd, const std::vector<std::string> &parNames,
+Likelihood::Likelihood(STMInput::SerializationData sd, const std::vector<std::string> &parNames,
 		const std::vector<STMModel::STMTransition> & transitionData) : 
 		transitions(transitionData)
 {
-	transitionFileName = sd.at<std::string>("transitionFileName")[0];
-	likelihoodThreads = sd.at<int>("likelihoodThreads")[0];
-	std::vector<double> prMean = sd.at<double>("priorMeans");
-	std::vector<double> prSD = sd.at<double>("priorSD");
-	std::vector<int> prFam = sd.at<int>("priorFamily");
+	transitionFileName = sd.at("transitionFileName")[0];
+	likelihoodThreads = STMInput::str_convert<int>(sd.at("likelihoodThreads")[0]);
+	std::vector<double> prMean = STMInput::str_convert<double>(sd.at("priorMeans"));
+	std::vector<double> prSD = STMInput::str_convert<double>(sd.at("priorSD"));
+	std::vector<int> prFam = STMInput::str_convert<int>(sd.at("priorFamily"));
 
 	for(int i = 0; i < parNames.size(); i++)
 	{

@@ -1,8 +1,7 @@
 #include "../hdr/engine.hpp"
-#include "../hdr/output.hpp"
 #include "../hdr/likelihood.hpp"
+#include "../hdr/input.hpp"
 #include <ctime>
-#include <cassert>
 #include <string>
 #include <cmath>
 #include <algorithm> // std::random_shuffle
@@ -10,6 +9,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <gsl/gsl_randist.h>
 
 
 namespace {
@@ -24,7 +24,7 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis v0.9";
+	std::string engineVersion = "Metropolis0.9";
 }
 
 namespace STMEngine {
@@ -61,7 +61,42 @@ outputBufferSize(500), adaptationSampleSize(100), adaptationRate(1.1)
 	else
 		saveResumeData = true;
 		
-	serialize_all();
+	if(saveResumeData) serialize_all();
+}
+
+
+// unserialization constructor
+Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd, 
+		STMLikelihood::Likelihood * const lhood, STMOutput::OutputQueue * const queue) : 
+		likelihood(lhood), outputQueue(queue), parameters(sd.at("Parameters")),
+		posteriorOptions(sd.at("OutputOptions")), 
+		rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), saveResumeData(true)
+{
+	STMInput::SerializationData esd = sd.at("Metropolis");
+	// check versions and return error if no match
+	std::string saveVersion = esd.at("version")[0];
+	if(saveVersion != engineVersion)
+	{
+		std::ostringstream msg;
+		msg << "Error, serialized input version = '" << saveVersion;
+		msg << ",' does not match program version = '" << engineVersion << "'";
+		throw(msg.str());
+	}
+				
+	// check pointers
+	if(!queue || !lhood)
+		throw std::runtime_error("Metropolis: passed null pointer on construction");
+
+	currentPosteriorProb = STMInput::str_convert<double>(esd.at("currentPosteriorProb")[0]);
+	adaptationRate = STMInput::str_convert<double>(esd.at("adaptationRate")[0]);
+	outputBufferSize = STMInput::str_convert<int>(esd.at("outputBufferSize")[0]);
+	thinSize = STMInput::str_convert<int>(esd.at("thinSize")[0]);
+	burnin = STMInput::str_convert<int>(esd.at("burnin")[0]);
+	adaptationSampleSize = STMInput::str_convert<int>(esd.at("adaptationSampleSize")[0]);
+	rngSeed = STMInput::str_convert<int>(esd.at("rngSeed")[0]);
+	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
+	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
+
 }
 
 
@@ -71,11 +106,10 @@ std::string Metropolis::version()
 
 void Metropolis::run_sampler(int n)
 {
-	return;
 	set_up_rng();
-	
-	if(not parameters.adapted())
-		auto_adapt();
+
+//	if(not parameters.adapted())
+//		auto_adapt();
 
 	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
@@ -119,7 +153,7 @@ void Metropolis::run_sampler(int n)
 			}
 			else
 			{
-				std::cerr << timestamp() << "   MCMC burnin iteration " << numCompleted << " of " 
+				std::cerr << timestamp() << "   MCMC iteration " << numCompleted << " of " 
 						<< n << '\n';			
 			}
 		}
