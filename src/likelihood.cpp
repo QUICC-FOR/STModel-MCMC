@@ -33,18 +33,74 @@
 #include <cmath>
 #include <algorithm>
 #include <omp.h>
+#include <iostream>
 #include <gsl/gsl_randist.h>
 #include "../hdr/likelihood.hpp"
 #include "../hdr/parameters.hpp"
+#include "../hdr/input.hpp"
 
 using std::vector;
 
 namespace STMLikelihood {
 
 Likelihood::Likelihood(const std::vector<STMModel::STMTransition> & transitionData, 
+		const std::string & transitionDataOriginFile, 
 		const std::map<std::string, PriorDist> & pr, unsigned int numThreads) : 
-		transitions(transitionData), priors(pr), likelihoodThreads(numThreads)
+		transitions(transitionData), transitionFileName(transitionDataOriginFile),
+		priors(pr), likelihoodThreads(numThreads)
 { }
+
+
+Likelihood::Likelihood(STMInput::SerializationData sd, const std::vector<std::string> &parNames,
+		const std::vector<STMModel::STMTransition> & transitionData) : 
+		transitions(transitionData)
+{
+	transitionFileName = sd.at("transitionFileName")[0];
+	likelihoodThreads = STMInput::str_convert<int>(sd.at("likelihoodThreads")[0]);
+	std::vector<double> prMean = STMInput::str_convert<double>(sd.at("priorMeans"));
+	std::vector<double> prSD = STMInput::str_convert<double>(sd.at("priorSD"));
+	std::vector<int> prFam = STMInput::str_convert<int>(sd.at("priorFamily"));
+
+	for(int i = 0; i < parNames.size(); i++)
+	{
+		priors[parNames[i]] = PriorDist (prMean.at(i), prSD.at(i), 
+				PriorFamilies(prFam.at(i)));
+	}
+}
+
+
+std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parNames) const
+{
+	std::ostringstream result;
+
+	result << "transitionFileName" << s << transitionFileName << "\n";
+	result << "likelihoodThreads" << s << likelihoodThreads << "\n";
+
+	STM::ParMap prMean, prSD;
+	std::map<std::string, PriorFamilies> prFam;
+	for(const auto & pn : parNames)
+	{
+		const PriorDist & p = priors.at(pn);
+		prMean[pn] = p.mean;
+		prSD[pn] = p.sd;
+		prFam[pn] = p.family;
+	}
+
+	result << "priorMeans";
+	for(const auto & v : parNames)
+		result << s << prMean[v];
+	result << "\npriorSD";
+	for(const auto & v : parNames)
+		result << s << prSD[v];
+	result << "\npriorFamily";
+	for(const auto & v : parNames)
+		result << s << int(prFam[v]);
+	result << "\n";
+
+	
+	return result.str();
+}
+
 
 double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters & params)
 {
@@ -83,4 +139,6 @@ double Likelihood::log_prior(const std::pair<std::string, double> & param) const
 
 	return std::log(val);
 }
+
+
 } //!namespace Likelihood

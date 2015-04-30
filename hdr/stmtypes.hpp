@@ -2,7 +2,8 @@
 #define STM_TYPES_H
 #include <map>
 #include <string>
-
+#include <vector>
+#include <iostream>
 namespace STM
 {
 	enum class StateTypes: char;

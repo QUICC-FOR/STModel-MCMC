@@ -35,14 +35,19 @@
 #include <chrono>
 #include <ostream>
 #include <fstream>
+#include "stmtypes.hpp"
+
+namespace STMInput
+{
+	class SerializationData;
+}
 
 
 namespace STMOutput {
 
 enum class OutputKeyType {
 	posterior,			// for writing posterior samples
-	inits,				// initial values
-	samplerVariance		// tuning parameters
+	resumeData			// for saving the serialized state to resume later
 };
 
 
@@ -58,10 +63,16 @@ class OutputOptions
 {
 	public:
 	OutputOptions(std::string directory = "STMOutput/", 
-		OutputMethodType method = OutputMethodType::STDOUT,
-		std::string baseFileName = "STMOutput");
+			OutputMethodType method = OutputMethodType::STDOUT,
+			std::string baseFileName = "STMOutput");
+	OutputOptions(STMInput::SerializationData & sd);
+	std::string serialize(char s) const;
 		
+	const OutputMethodType & method() { return outputMethod; }
+
 	protected:
+	static bool allow_appends(OutputKeyType key);
+	
 	std::string filename;
 	std::string dirname;
 	OutputMethodType outputMethod;
@@ -91,7 +102,8 @@ class OutputBuffer: protected OutputOptions
 	OutputBuffer(const std::vector<std::map<std::string, double> > & data, 
 			const std::vector<std::string> & keyOrder, OutputKeyType key, 
 			OutputOptions options = OutputOptions());
-
+	OutputBuffer(const std::string & rawOutput, OutputKeyType key, 
+			OutputOptions options = OutputOptions());
 	
 	/*
 		save() does the work of writing the object's data to disk
@@ -99,12 +111,16 @@ class OutputBuffer: protected OutputOptions
 		note that consecutive calls to save() will not duplicate the output
 	*/
 	void save();
+	static void setup_resume(bool header);
+	static bool posterior_started();
 
 
 	private:
 	std::ostream & set_output_stream(std::ofstream & file);
 	void cleanup_output_stream(std::ofstream & file);
+	void buffer_setup();
 	void buffer_setup(const std::vector<std::string> & keyOrder);
+	void prepare_output_string();
 
 	static std::vector<std::string> keys;	// controls the order in which data are written
 	static bool headerWritten;
@@ -112,6 +128,7 @@ class OutputBuffer: protected OutputOptions
 	OutputKeyType keyType;
 	std::vector<std::map<std::string, double> > dat;
 	bool dataWritten;
+	std::string outputString;
 	
 	template<typename T> 
 	std::string vec_to_str(std::vector<T> inDat, char delim = ',');

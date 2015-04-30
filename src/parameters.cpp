@@ -26,6 +26,7 @@ STModel-MCMC : parameters.cpp
 #include <sstream>
 
 #include "../hdr/parameters.hpp"
+#include "../hdr/input.hpp"
 
 namespace STMParameters
 {
@@ -51,6 +52,66 @@ STModelParameters::STModelParameters(const std::vector<ParameterSettings> & init
 	}
 	reset();
 }
+
+
+STModelParameters::STModelParameters(STMInput::SerializationData & sd)
+{
+	STModelParameters::parNames = sd.at("parNames");
+	std::vector<STM::ParValue> inits = STMInput::str_convert<STM::ParValue>(sd.at("initialVals"));
+	std::vector<double> var = STMInput::str_convert<double>(sd.at("samplerVariance"));
+	std::vector<double> accept = STMInput::str_convert<double>(sd.at("acceptanceRates"));
+	std::vector<STM::ParValue> vals = STMInput::str_convert<STM::ParValue>(sd.at("parameterValues"));
+	for(int i = 0; i < parNames.size(); i++)
+	{
+		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], var[i], 
+				accept[i]);
+		parameterValues[parNames[i]] = vals[i];
+	}
+	
+	STModelParameters::targetAcceptanceInterval = STMInput::str_convert<double>(sd.at("targetAcceptanceInterval"));
+	iterationCount = STMInput::str_convert<double>(sd.at("iterationCount")[0]);
+	
+}
+
+
+std::string STModelParameters::serialize(char s) const
+{
+	std::ostringstream result;
+	std::vector<std::string> pNames = names();
+
+	result << "parNames";
+	for(const auto & v : pNames) result << s << v;
+	result << "\n";
+	
+	STM::ParMap initialVals, pVariance, pAcceptance;
+	for(const auto & pn : pNames)
+	{
+		const ParameterSettings & ps = parSettings[pn];
+		initialVals[pn] = ps.initialValue;
+		pVariance[pn] = ps.variance;
+		pAcceptance[pn] = ps.acceptanceRate;
+	}
+	
+	result << "initialVals";
+	for(const auto & pn : pNames) result << s << initialVals[pn];
+	result << "\nsamplerVariance";
+	for(const auto & pn : pNames) result << s << pVariance[pn];
+	result << "\nacceptanceRates";
+	for(const auto & pn : pNames) result << s << pAcceptance[pn];
+
+	result << "\ntargetAcceptanceInterval";
+	for(const auto & v : targetAcceptanceInterval)
+		result << s << v;
+	result << "\niterationCount" << s << iteration();
+	
+	result << "\nparameterValues";
+	for(const auto & pn : pNames) result << s << parameterValues.at(pn);
+	result << "\n";
+
+	return result.str();
+
+}
+
 
 
 const std::vector<STM::ParName> & STModelParameters::names() const

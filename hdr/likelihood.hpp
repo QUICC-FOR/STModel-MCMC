@@ -38,12 +38,17 @@ namespace STMParameters {
 	struct TransitionRates;
 }
 
+namespace STMInput
+{
+	class SerializationData;
+}
+
 
 namespace STMLikelihood {
 enum class PriorFamilies
 {
-	Normal,
-	Cauchy
+	Normal=0,
+	Cauchy=1
 };
 
 struct PriorDist {
@@ -55,23 +60,22 @@ struct PriorDist {
 };
 
 
-
-// function pointer type for likelihood functions
-typedef double (*LhoodFuncPtr)(STMParameters::TransitionRates, std::map<char, double>);
-
-
 class Likelihood {
 	public:
-  	Likelihood(const std::vector<STMModel::STMTransition> & transitionData, 
+  	Likelihood(const std::vector<STMModel::STMTransition> & transitionData,
+  			const std::string & transitionDataOriginFile,
   			const std::map<std::string, PriorDist> & pr, unsigned int numThreads = 8);
+	Likelihood(STMInput::SerializationData sd, const std::vector<std::string> &parNames,
+			const std::vector<STMModel::STMTransition> & transitionData);
 	double compute_log_likelihood(const STMParameters::STModelParameters & params);
 	double log_prior(const std::pair<std::string, double> & param) const;
+	std::string serialize(char s, const std::vector<STM::ParName> & parNames) const;
 
 	private:
 	std::vector<STMModel::STMTransition> transitions;
-	std::map<char, std::map<char, LhoodFuncPtr> > lhood;
 	std::map<std::string, PriorDist> priors;
 	unsigned int likelihoodThreads;
+	std::string transitionFileName;		// from where did the transition data originate?
 };
 
 } // !STMLikelihood namespace
