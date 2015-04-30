@@ -90,7 +90,7 @@ void State::self_check()
 }
 
 
-STM::ParMap STMTransition::generate_annual_rates(const STM::ParMap & p) const
+STM::ParMap STMTransition::generate_transform_rates(const STM::ParMap & p) const
 {
 	STM::ParMap annualLogitParams;
 	annualLogitParams["gamma"] = p.at("g0") + p.at("g1")*env1 + p.at("g2")*env2 + 

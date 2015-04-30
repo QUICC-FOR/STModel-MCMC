@@ -38,24 +38,30 @@ hdr/model.hpp hdr/stmtypes.hpp
 
 bin/engine.o: src/engine.cpp hdr/engine.hpp hdr/parameters.hpp hdr/likelihood.hpp \
 hdr/output.hpp hdr/stmtypes.hpp hdr/input.hpp
+	mkdir -p bin
 	$(CC) $(CO) -c -o bin/engine.o src/engine.cpp
 
 bin/likelihood.o: src/likelihood.cpp hdr/likelihood.hpp hdr/model.hpp hdr/stmtypes.hpp \
 hdr/parameters.hpp hdr/input.hpp
+	mkdir -p bin
 	$(CC) $(CO) -c -o bin/likelihood.o src/likelihood.cpp
 
 bin/parameters.o: src/parameters.cpp hdr/parameters.hpp hdr/input.hpp hdr/stmtypes.hpp
+	mkdir -p bin
 	$(CC) $(CO) -c -o bin/parameters.o src/parameters.cpp
 
 bin/output.o: src/output.cpp hdr/output.hpp hdr/stmtypes.hpp hdr/input.hpp
+	mkdir -p bin
 	$(CC) $(CO) -c -o bin/output.o src/output.cpp
 
 # 4-state model
 bin/model_4.o: src/four_state/model_4s.cpp hdr/model.hpp hdr/stmtypes.hpp
+	mkdir -p bin
 	$(CC) $(CO) -c -o bin/model_4.o src/four_state/model_4s.cpp
 
 # 2-state model
 bin/model_2.o: src/two_state/model_2s.cpp hdr/model.hpp hdr/stmtypes.hpp
+	mkdir -p bin
 	$(CC) $(CO) -c -o bin/model_2.o src/two_state/model_2s.cpp
 
 

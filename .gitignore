@@ -27,11 +27,8 @@
 *.out
 *.app
 
-# Data
-inp/*
-
-# results
-res/*
+# data & results
+run/*
 
 src/ref*
 bin/*

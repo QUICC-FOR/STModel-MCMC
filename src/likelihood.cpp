@@ -45,9 +45,10 @@ namespace STMLikelihood {
 
 Likelihood::Likelihood(const std::vector<STMModel::STMTransition> & transitionData, 
 		const std::string & transitionDataOriginFile, 
-		const std::map<std::string, PriorDist> & pr, unsigned int numThreads) : 
-		transitions(transitionData), transitionFileName(transitionDataOriginFile),
-		priors(pr), likelihoodThreads(numThreads)
+		const std::map<std::string, PriorDist> & pr, unsigned int numThreads,
+		int parameterInterval) : transitions(transitionData), priors(pr), 
+		transitionFileName(transitionDataOriginFile), likelihoodThreads(numThreads), 
+		targetInterval(parameterInterval)
 { }
 
 
@@ -60,6 +61,7 @@ Likelihood::Likelihood(STMInput::SerializationData sd, const std::vector<std::st
 	std::vector<double> prMean = STMInput::str_convert<double>(sd.at("priorMeans"));
 	std::vector<double> prSD = STMInput::str_convert<double>(sd.at("priorSD"));
 	std::vector<int> prFam = STMInput::str_convert<int>(sd.at("priorFamily"));
+	targetInterval = STMInput::str_convert<unsigned int>(sd.at("targetInterval")[0]);
 
 	for(int i = 0; i < parNames.size(); i++)
 	{
@@ -75,6 +77,7 @@ std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parN
 
 	result << "transitionFileName" << s << transitionFileName << "\n";
 	result << "likelihoodThreads" << s << likelihoodThreads << "\n";
+	result << "targetInterval" << s << targetInterval << "\n";
 
 	STM::ParMap prMean, prSD;
 	std::map<std::string, PriorFamilies> prFam;
@@ -112,7 +115,7 @@ double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters
 		for(int i = 0; i < transitions.size(); i++)
 		{
 			STMModel::STMTransition & dat = transitions.at(i);
-			double lik = dat.transition_prob(params.current_state());
+			double lik = dat.transition_prob(params.current_state(), targetInterval);
 			sumlogl += std::log(lik);
 		} // ! for i
 	} // !parallel for

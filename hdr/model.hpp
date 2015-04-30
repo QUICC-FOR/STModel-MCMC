@@ -74,13 +74,13 @@ class STMTransition
 	STMTransition(char state1, char state2, double env1, double env2, 
 			std::map<char, double> prevalence, int interval, bool useCube);
 
-	STM::ParValue transition_prob(const STM::ParMap & p);
+	STM::ParValue transition_prob(const STM::ParMap & p, int targetInterval);
 
 	private:
 	static void setup_transition_functions();
 	TransProbFunction generate_transition_function();	
-	STM::ParMap generate_annual_rates(const STM::ParMap & p) const;
-	STM::ParMap generate_interval_rates(const STM::ParMap & p) const;
+	STM::ParMap generate_transform_rates(const STM::ParMap & p) const;
+	STM::ParMap generate_interval_rates(const STM::ParMap & p, int targetInterval) const;
 	void invalid_transition();
 
 	static std::map<STM::StateTypes, std::map<STM::StateTypes, TransProbFunction> > transitionFunctions;
@@ -97,8 +97,9 @@ class STMTransition
 
 // IMPLEMENTATION
 
-inline STM::ParValue deannual(STM::ParValue val, int interval)
-{ return 1 - std::pow((1 - val), interval); }
+inline STM::ParValue transform_interval(STM::ParValue val, int originalInterval, 
+		int targetInterval)
+{ return 1 - std::pow((1 - val), (double(originalInterval)/targetInterval)); }
 
 
 inline STM::ParValue inv_logit(STM::ParValue logit_val)
@@ -129,9 +130,9 @@ inline void STMTransition::invalid_transition()
 }
 
 
-inline STM::ParValue STMTransition::transition_prob(const STM::ParMap & p)
+inline STM::ParValue STMTransition::transition_prob(const STM::ParMap & p, int targetInterval)
 { 
-	STM::ParMap rates = generate_interval_rates(p);
+	STM::ParMap rates = generate_interval_rates(p, targetInterval);
 	return transProb(rates, expected); 
 }
 
@@ -149,12 +150,14 @@ inline STMTransition::STMTransition(char state1, char state2, double env1, doubl
 }
 
 
-inline STM::ParMap STMTransition::generate_interval_rates(const STM::ParMap & p) const
+inline STM::ParMap STMTransition::generate_interval_rates(const STM::ParMap & p, 
+		int targetInterval) const
 {
-	STM::ParMap annualLogitParams = generate_annual_rates(p);
+	STM::ParMap transformLogitParams = generate_transform_rates(p);
 	STM::ParMap macroParams;
-	for(const auto & par : annualLogitParams)
-		macroParams[par.first] = deannual(inv_logit(par.second), interval);
+	for(const auto & par : transformLogitParams)
+		macroParams[par.first] = transform_interval(inv_logit(par.second), interval, 
+				targetInterval);
 	return macroParams;
 }
 
