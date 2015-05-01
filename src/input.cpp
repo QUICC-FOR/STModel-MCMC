@@ -267,7 +267,7 @@ void STMInputHelper::display_parameter_help() const
 	std::cerr << "        priorMean -- the mean of the prior\n";
 	std::cerr << "        priorSD -- the standard deviation of the prior\n";
 	std::cerr << "    Optional:\n";
-	std::cerr << "        samplerVariance -- the variance (step size) to use for tuning the MH sampler\n\n";
+	std::cerr << "        samplerVariance -- the variance (step size) to use for tuning the MH sampler\n" << std::endl;
 }
 
 
@@ -292,6 +292,7 @@ void STMInputHelper::display_transition_help() const
 		std::cerr << "        " << prevalenceBaseName << st;
 		std::cerr << " -- the expected probability of the " << st << "state\n";
 	}
+	std::cerr << std::endl;
 }
 
 

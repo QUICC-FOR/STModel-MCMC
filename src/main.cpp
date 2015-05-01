@@ -121,6 +121,7 @@ int main(int argc, char ** argv)
 		std::cerr << "Engine started successfully\n";
 		std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 				STMOutput::OutputWorkerThread(outQueue, &engineFinished));
+		std::cerr << std::endl;
 		
 		// wait until engine completes
 		engineThread.join();
@@ -213,6 +214,6 @@ void print_help()
 	std::cerr << "                         1: Normal; only print status messages\n";	
 	std::cerr << "                         2: Talkative; prints acceptance rates during adaptation\n";	
 	std::cerr << "                         3: Verbose; prints the likelihood at each iteration\n";	
-	std::cerr << "                         4: Extra Verbose; prints parameter values at each iteration\n";	
+	std::cerr << "                         4: Extra Verbose; prints parameter values at each iteration" << std::endl;	
 	exit(1);
 }
