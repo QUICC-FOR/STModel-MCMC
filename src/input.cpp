@@ -2,31 +2,108 @@
 #include "../hdr/stmtypes.hpp"
 #include <iostream>
 #include <algorithm>
+#include <functional> 
+#include <cctype>
+#include <locale>
+
+// trim from start
+namespace
+{
+	inline std::string &ltrim(std::string &s)
+	{
+			s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+			return s;
+	}
+
+	// trim from end
+	inline std::string &rtrim(std::string &s)
+	{
+			s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+			return s;
+	}
+
+	// trim from both ends
+	inline std::string &trim(std::string &s) 
+	{
+			return ltrim(rtrim(s));
+	}
+
+	bool notalpha(char c)
+	{ return (not std::isalpha(c)); }
+
+}
+
 
 namespace STMInput
 {
 
 
-STMInputHelper::STMInputHelper (const char * initFileName, const char * transFileName, 
-		bool useCube, char delim) : useCube(useCube), prevalenceBaseName("prevalence")
+
+void SerializationData::add(const std::string & key, const std::vector<std::string> & data)
+{ sData[key] = data; }
+
+std::vector<std::string> SerializationData::at(const std::string & key) const
+{ return sData.at(key); }
+
+
+STMInputHelper::STMInputHelper (const char * filename, InputType type, bool useCube, 
+		char delim): useCube(useCube), prevalenceBaseName("prevalence")
 {
-	std::ifstream initFile, transFile;
-	initFile.open(initFileName);
-	transFile.open(transFileName);
+	switch(type)
+	{
+		case InputType::transitions:
+			setup_transitions(filename, delim);
+			break;
+		case InputType::parameters:
+			setup_parameters(filename, delim);
+			break;
+		case InputType::resume:
+			setup_resume(filename);
+			break;
+	}
+}
+
+
+void STMInputHelper::setup_transitions(const char * filename, char delim)
+{
+	std::ifstream transFile;
+	transFile.open(filename);
 	{
 		std::stringstream err;
-		if(!initFile.is_open()) err << "Failed to open " << initFileName << ">\n";
-		if(!transFile.is_open()) err << "Failed to open " << transFileName << ">\n";
+		if(!transFile.is_open()) err << "Failed to open " << filename << "\n";
+		if(!err.str().empty()) throw std::runtime_error(err.str());
+	}
+
+	// get the column names from the first line of the CSVs and figure out their order
+	std::vector<std::string> transNames;
+	get_next_line(transFile, transNames, delim);
+	transColIndices = get_col_numbers(transNames);
+
+	try {
+		read_transitions(transFile, delim);
+	}
+	catch (std::out_of_range &e) {
+		display_transition_help();
+		throw STMInputError();
+	}
+	transFile.close();
+}
+
+void STMInputHelper::setup_parameters (const char * filename, char delim)
+{
+	std::ifstream initFile;
+	initFile.open(filename);
+	{
+		std::stringstream err;
+		if(!initFile.is_open()) err << "Failed to open " << filename << "\n";
 		if(!err.str().empty()) throw std::runtime_error(err.str());
 	}
 
 
 	// get the column names from the first line of the CSVs and figure out their order
-	std::vector<std::string> initNames, transNames;
+	std::vector<std::string> initNames;
 	get_next_line(initFile, initNames, delim);
-	get_next_line(transFile, transNames, delim);
 	initColIndices = get_col_numbers(initNames);
-	transColIndices = get_col_numbers(transNames);
 	
 	// read the rest of the data into appropriate objects
 	try {
@@ -36,17 +113,64 @@ STMInputHelper::STMInputHelper (const char * initFileName, const char * transFil
 		display_parameter_help();
 		throw STMInputError();
 	}
-	
-	try {
-		read_transitions(transFile, delim);
-	}
-	catch (std::out_of_range &e) {
-		display_transition_help();
-		throw STMInputError();
-	}
-
 	initFile.close();
-	transFile.close();
+}
+
+
+void STMInputHelper::setup_resume(const char * filename)
+{
+	std::ifstream resFile;
+	resFile.open(filename);
+	{
+		std::stringstream err;
+		if(not resFile.is_open()) err << "Failed to open " << filename << "\n";
+		if(not err.str().empty()) throw std::runtime_error(err.str());
+	}
+	
+	std::string line;
+	std::string keyName;
+	while(std::getline(resFile, line))
+	{
+		line = trim(line);
+		if(line == "" or line == "{") continue;
+		if(keyName.empty()) 
+		{
+			keyName = get_resume_key(line);
+			if(not keyName.empty())
+				resumeData[keyName] = STMInput::SerializationData ();
+		} else
+		{
+			if(line == "}")
+			{
+				keyName.clear();
+			}
+			else
+			{
+				std::string resumeKey;
+				std::vector<std::string> data;
+				parse_resume_data(line, resumeKey, data);
+				resumeData[keyName].add(resumeKey, data);
+			}
+		}
+	}
+	resFile.close();
+}
+
+
+void STMInputHelper::parse_resume_data(const std::string & inp, std::string & key, 
+		std::vector<std::string> & dat)
+{
+	size_t index = inp.find(" ");
+	key = inp.substr(0, index);
+	std::string remainder = inp.substr(index+1);
+	dat = split_line(remainder, ' ');
+}
+
+
+std::string STMInputHelper::get_resume_key(std::string line)
+{
+	line.erase(std::remove_if(line.begin(), line.end(), notalpha), line.end());
+	return(line);
 }
 
 
@@ -56,6 +180,9 @@ std::vector<STMParameters::ParameterSettings> STMInputHelper::parameter_inits()
 
 std::map<std::string, STMLikelihood::PriorDist> STMInputHelper::priors()
 { return priorDists; }
+
+std::map<std::string, STMInput::SerializationData> STMInputHelper::resume_data() const 
+{return resumeData; }
 
 
 std::vector<STMModel::STMTransition> STMInputHelper::transitions()
@@ -140,7 +267,7 @@ void STMInputHelper::display_parameter_help() const
 	std::cerr << "        priorMean -- the mean of the prior\n";
 	std::cerr << "        priorSD -- the standard deviation of the prior\n";
 	std::cerr << "    Optional:\n";
-	std::cerr << "        samplerVariance -- the variance (step size) to use for tuning the MH sampler\n\n";
+	std::cerr << "        samplerVariance -- the variance (step size) to use for tuning the MH sampler\n" << std::endl;
 }
 
 
@@ -165,6 +292,7 @@ void STMInputHelper::display_transition_help() const
 		std::cerr << "        " << prevalenceBaseName << st;
 		std::cerr << " -- the expected probability of the " << st << "state\n";
 	}
+	std::cerr << std::endl;
 }
 
 
@@ -207,6 +335,7 @@ void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 	static bool rTried = false;
 	std::vector<std::string> line;
 	int ln = 0;
+
 	while(get_next_line(file, line, delim)) {
 		++ln;
 		if(line.empty()) continue;

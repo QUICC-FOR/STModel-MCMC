@@ -26,6 +26,7 @@ STModel-MCMC : parameters.cpp
 #include <sstream>
 
 #include "../hdr/parameters.hpp"
+#include "../hdr/input.hpp"
 
 namespace STMParameters
 {
@@ -53,6 +54,66 @@ STModelParameters::STModelParameters(const std::vector<ParameterSettings> & init
 }
 
 
+STModelParameters::STModelParameters(STMInput::SerializationData & sd)
+{
+	STModelParameters::parNames = sd.at("parNames");
+	std::vector<STM::ParValue> inits = STMInput::str_convert<STM::ParValue>(sd.at("initialVals"));
+	std::vector<double> var = STMInput::str_convert<double>(sd.at("samplerVariance"));
+	std::vector<double> accept = STMInput::str_convert<double>(sd.at("acceptanceRates"));
+	std::vector<STM::ParValue> vals = STMInput::str_convert<STM::ParValue>(sd.at("parameterValues"));
+	for(int i = 0; i < parNames.size(); i++)
+	{
+		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], var[i], 
+				accept[i]);
+		parameterValues[parNames[i]] = vals[i];
+	}
+	
+	STModelParameters::targetAcceptanceInterval = STMInput::str_convert<double>(sd.at("targetAcceptanceInterval"));
+	iterationCount = STMInput::str_convert<double>(sd.at("iterationCount")[0]);
+	
+}
+
+
+std::string STModelParameters::serialize(char s) const
+{
+	std::ostringstream result;
+	std::vector<std::string> pNames = names();
+
+	result << "parNames";
+	for(const auto & v : pNames) result << s << v;
+	result << "\n";
+	
+	STM::ParMap initialVals, pVariance, pAcceptance;
+	for(const auto & pn : pNames)
+	{
+		const ParameterSettings & ps = parSettings[pn];
+		initialVals[pn] = ps.initialValue;
+		pVariance[pn] = ps.variance;
+		pAcceptance[pn] = ps.acceptanceRate;
+	}
+	
+	result << "initialVals";
+	for(const auto & pn : pNames) result << s << initialVals[pn];
+	result << "\nsamplerVariance";
+	for(const auto & pn : pNames) result << s << pVariance[pn];
+	result << "\nacceptanceRates";
+	for(const auto & pn : pNames) result << s << pAcceptance[pn];
+
+	result << "\ntargetAcceptanceInterval";
+	for(const auto & v : targetAcceptanceInterval)
+		result << s << v;
+	result << "\niterationCount" << s << iteration();
+	
+	result << "\nparameterValues";
+	for(const auto & pn : pNames) result << s << parameterValues.at(pn);
+	result << "\n";
+
+	return result.str();
+
+}
+
+
+
 const std::vector<STM::ParName> & STModelParameters::names() const
 { return parNames; }
 
@@ -69,29 +130,38 @@ void STModelParameters::set_acceptance_rate(const STM::ParName & par, double rat
 { parSettings.at(par).acceptanceRate = rate; }
 
 
-std::string STModelParameters::str_acceptance_rates() const
+std::string STModelParameters::str_acceptance_rates(bool inColor) const
 {
-	std::string red = "\033[1;31m";
-	std::string cyan = "\033[1;36m";
-	std::string normal = "\033[0m";
 	std::stringstream res;
 	res << std::fixed;
 	res.precision(3);
-	res << "[ ";
+
+	std::string red = "\033[1;31m";
+	std::string cyan = "\033[1;36m";
+	std::string normal = "\033[0m";
+
+	if(inColor)
+		res << "[ ";
 	for(const auto ps: parSettings) {
-		if(not_adapted(ps.first))
-			res << red;
-		else
-			res << cyan;
+		if(inColor)
+		{
+			if(not_adapted(ps.first))
+				res << red;
+			else
+				res << cyan;
+		}
 		res << ps.second.acceptanceRate << " ";
 	}
-	res << normal;
-	res << "]";
+	if(inColor)
+	{
+		res << normal;
+		res << "]";
+	}
 	return res.str();
 }
 
 
-std::string STModelParameters::str_sampling_variance() const
+std::string STModelParameters::str_sampling_variance(bool inColor) const
 {
 	std::string red = "\033[1;31m";
 	std::string cyan = "\033[1;36m";
@@ -99,16 +169,23 @@ std::string STModelParameters::str_sampling_variance() const
 	std::stringstream res;
 	res << std::fixed;
 	res.precision(3);
-	res << "[ ";
+	if(inColor)
+		res << "[ ";
 	for(const auto ps: parSettings) {
-		if(not_adapted(ps.first))
-			res << red;
-		else
-			res << cyan;
+		if(inColor)
+		{
+			if(not_adapted(ps.first))
+				res << red;
+			else
+				res << cyan;
+		}
 		res << ps.second.variance << " ";
 	}
-	res << normal;
-	res << "]";
+	if(inColor)
+	{
+		res << normal;
+		res << "]";
+	}
 	return res.str();
 }
 

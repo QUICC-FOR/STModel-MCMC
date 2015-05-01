@@ -35,16 +35,30 @@
 
 namespace STMInput {
 
+	enum class InputType
+	{
+		transitions,
+		parameters,
+		resume
+	};
+
+
+template<typename T> T str_convert(const std::string &s);
+template<typename T> std::vector<T> str_convert(const std::vector<std::string> & sv);
+
 class STMInputHelper
 {
 	public:
-	STMInputHelper (const char * initFileName, const char * transFileName, 
-			bool useCube = false, char delim = ',');
+	STMInputHelper (const char * filename, InputType type, bool useCube = false, char delim = ',');
 	std::vector<STMParameters::ParameterSettings> parameter_inits();
 	std::map<std::string, STMLikelihood::PriorDist> priors();
 	std::vector<STMModel::STMTransition> transitions();
+	std::map<std::string, STMInput::SerializationData> resume_data() const;
 	
 	private:
+	void setup_transitions(const char * filename, char delim);
+	void setup_parameters (const char * filename, char delim);
+	void setup_resume(const char * filename);
 	int get_next_line(std::ifstream &file, std::vector<std::string> &dest, char delim) const;
 	std::map<std::string, int> get_col_numbers(std::vector<std::string> cNames);
 	void read_inits(std::ifstream &file, char delim);
@@ -53,7 +67,8 @@ class STMInputHelper
 	void read_transitions(std::ifstream &file, char delim);
 	std::map<char, double> read_prevalence(std::vector<std::string> line);
 	std::vector<std::string> split_line(const std::string & str, char delim) const;
-	template<typename T> T str_convert(const std::string &s) const;
+	void parse_resume_data(const std::string & inp, std::string & key, std::vector<std::string> & dat);
+	std::string get_resume_key(std::string line);
 	
 	std::map<std::string, int> initColIndices, transColIndices;
 	std::vector<STMParameters::ParameterSettings> initialValues;
@@ -61,6 +76,20 @@ class STMInputHelper
 	std::vector<STMModel::STMTransition> trans;
 	bool useCube;
 	std::string prevalenceBaseName;
+	std::map<std::string, STMInput::SerializationData> resumeData;
+};
+
+
+class SerializationData
+{
+	public:
+	SerializationData() {};
+	void add(const std::string & key, const std::vector<std::string> & data);
+	std::vector<std::string> at(const std::string & key) const;
+
+	private:
+	std::map<std::string, std::vector<std::string> > sData;
+	
 };
 
 
@@ -72,10 +101,29 @@ class STMInputError : public std::runtime_error
 };
 
 
+	// IMPLEMENTATION
+	
+	/*
+		THIS IS FUCKITTY FUCK FUCKED
+		FUCK THIS FUCKING FUCKWAD FUCKS
+		
+		IT WON'T FUCKING WORK BECAUSE FUCKING C++ WON'T FUCKING LET YOU FUCKING
+		SPECIALIZE A FUCKING TEMPLATE FUNCTION IN A NON-FUCKING TEMPLATE CLASS
+		
+		SO I NEED TO JUST GHETTO-BALL IT AND DO THE FOLLOWING
+		0. MOVE THE WHOLE THING TO INPUT
+		1. CHANGE AT() TO JUST RETURN THE DATA
+		2. WRITE NORMAL-ASS (NON-MEMBER) TEMPLATE FUNCTION THAT TAKES THE VECTOR OF STRINGS
+			RETURNED BY AT AND CONVERTS IT TO SOMETHING USEFUL
+		3. SPECIALIZE #2 TO NOT ACT RETARTED WHEN GIVEN A STRING
+	*/
+
+
+
 // TEMPLATE FUNCTION IMPLEMENTATION
 
 template<typename T>
-T STMInputHelper::str_convert(const std::string &s) const
+T str_convert(const std::string &s)
 {
 	T result;
 	std::istringstream val(s);
@@ -84,6 +132,16 @@ T STMInputHelper::str_convert(const std::string &s) const
 		ss << "Cannot convert value <" << s << "> from string into requested type";
 		throw( std::runtime_error (ss.str() ));
 	}
+	return result;
+}
+
+
+template<typename T> 
+std::vector<T> str_convert(const std::vector<std::string> & sv)
+{
+	std::vector<T> result;
+	for(auto i : sv)
+		result.push_back(str_convert<T>(i));
 	return result;
 }
 

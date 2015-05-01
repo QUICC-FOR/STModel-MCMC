@@ -2,7 +2,6 @@
 #define STM_ENGINE_H
 
 #include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
 #include <vector>
 #include <map>
 #include <memory>
@@ -14,6 +13,10 @@ namespace STMLikelihood {
 	class Likelihood;
 }
 
+namespace STMInput
+{
+	class SerializationData;
+}
 
 namespace STMEngine {
 
@@ -25,6 +28,7 @@ enum class EngineOutputLevel {
 	ExtraVerbose=4		// prints parameter values at each iteration
 };
 
+
 class Metropolis
 {
 	public:
@@ -33,6 +37,8 @@ class Metropolis
 			const lhood, EngineOutputLevel outLevel = EngineOutputLevel::Normal, 
 			STMOutput::OutputOptions outOpt = STMOutput::OutputOptions(),
 			int thin = 1, int burnin = 0, bool rngSetSeed = false, int rngSeed = 0);
+	Metropolis(std::map<std::string, STMInput::SerializationData> & sd, 
+			STMLikelihood::Likelihood * const lhood, STMOutput::OutputQueue * const queue);
 //	Metropolis(const Metropolis & m);
 //	Metropolis & operator= (const Metropolis &m);
 // 	~Metropolis();
@@ -48,27 +54,36 @@ class Metropolis
 	double log_posterior_prob(const STMParameters::STModelParameters & par, 
 			const STM::ParPair & pair) const;
 	void set_up_rng();
+	void serialize_all() const;
+	std::string serialize(char sep) const;
+	static std::string version();
+
 	
 	// pointers to objects that the engine doesn't own, but that it uses
 	STMOutput::OutputQueue * outputQueue;
 	STMLikelihood::Likelihood * likelihood;
 
 	// objects that the engine owns
+	
+	// data and settings that should be saved in resumeData
 	STMParameters::STModelParameters parameters;
-	std::vector<STM::ParMap> currentSamples;
 	std::shared_ptr<gsl_rng> rng;
 	double currentPosteriorProb;
+	double adaptationRate;
 
 	// settings
 	int outputBufferSize;
 	int thinSize;
 	int burnin;
 	int adaptationSampleSize;
-	double adaptationRate;
 	bool rngSetSeed;
 	int rngSeed;
 	EngineOutputLevel outputLevel;
 	STMOutput::OutputOptions posteriorOptions;
+	
+	// data that do not need to be saved in resumeData
+	std::vector<STM::ParMap> currentSamples;
+	bool saveResumeData;
 };
 
 } // namespace
