@@ -28,7 +28,7 @@
 *.app
 
 # data & results
-run/*
+run*
 
 src/ref*
 bin/*

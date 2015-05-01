@@ -1,5 +1,0 @@
-add support for a burn-in period
-add support for automatic thinning
-implement long double precision
-add support for multiple chains
-add automated unit test coverage
