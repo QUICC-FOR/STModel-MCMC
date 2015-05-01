@@ -107,8 +107,8 @@ class STModelParameters
 	void set_acceptance_rate(const STM::ParName & par, double rate);
 	int not_adapted(const STM::ParName & par) const;
 	bool adapted() const;
-	std::string str_acceptance_rates() const;
-	std::string str_sampling_variance() const;
+	std::string str_acceptance_rates(bool inColor = false) const;
+	std::string str_sampling_variance(bool inColor = false) const;
 
 	/*
 		Utility functions

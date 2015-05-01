@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <unistd.h>
 #include <gsl/gsl_randist.h>
 
 
@@ -149,12 +150,12 @@ if(not parameters.adapted())
 			if(numCompleted == 0)
 			{
 				std::cerr << timestamp() << "   MCMC burnin iteration " << burninCompleted
-						<< " of " << burnin << '\n';						
+						<< " of " << burnin << std::endl;						
 			}
 			else
 			{
 				std::cerr << timestamp() << "   MCMC iteration " << numCompleted << " of " 
-						<< n << '\n';			
+						<< n << std::endl;			
 			}
 		}
 	}
@@ -170,7 +171,7 @@ if(not parameters.adapted())
 void Metropolis::auto_adapt()
 {
 	if(outputLevel >= EngineOutputLevel::Normal) {
-		std::cerr << timestamp() << " Starting automatic adaptation\n";
+		std::cerr << timestamp() << " Starting automatic adaptation" << std::endl;
 	}
 	std::vector<STM::ParName> parNames (parameters.names());		
 	while(!parameters.adapted()) {
@@ -191,9 +192,9 @@ void Metropolis::auto_adapt()
 		}
 		if(outputLevel >= EngineOutputLevel::Talkative) {
 			std::cerr << "\n    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
-			std::cerr << "    " << parameters.str_acceptance_rates() << "\n";
+			std::cerr << "    " << parameters.str_acceptance_rates(isatty(fileno(stderr))) << "\n";
 			std::cerr << "    sampler variance:\n";
-			std::cerr << "    " << parameters.str_sampling_variance() << "\n";
+			std::cerr << "    " << parameters.str_sampling_variance(isatty(fileno(stderr))) << std::endl;
 		}
 		adaptationSampleSize *= 1.25;
 		currentSamples.clear();
@@ -202,7 +203,7 @@ void Metropolis::auto_adapt()
 	}
 //	parameters.reset(); // if disabled, this will include adaptation samples in the burnin
 	if(outputLevel >= EngineOutputLevel::Normal) {
-		std::cerr << timestamp() << " Adaptation completed successfully\n";
+		std::cerr << timestamp() << " Adaptation completed successfully" << std::endl;
 	}
 }
 
@@ -304,7 +305,7 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 						coln = 0;
 					}
 				}
-				std::cerr << "\n";
+				std::cerr << std::endl;
 			
 				std::cerr.flags (oldflags);
 				std::cerr.precision (oldprecision);
