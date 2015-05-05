@@ -1,4 +1,11 @@
+# matt's mac
 CC=/opt/local/bin/c++-mp-4.9
+GSL=-lgsl
+
+# mingan cluster
+#CC=c++
+#GSL=-Wl,-Bstatic -lgsl -lgslcblas -Wl,-Bdynamic
+
 CF=-std=c++11
 
 # for compiling with openMP, use the first
@@ -6,7 +13,6 @@ CF=-std=c++11
 CO=$(CF) -fopenmp
 #CO=$(CF)
 
-GSL=-lgsl
 
 twostate: bin/stm2_mcmc
 fourstate: bin/stm4_mcmc
@@ -15,14 +21,15 @@ fourstate: bin/stm4_mcmc
 # two state
 bin/stm2_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
 bin/input.o bin/model_2.o
-	$(CC) $(CO) $(GSL) -o bin/stm2_mcmc bin/main.o bin/engine.o bin/parameters.o \
-	bin/likelihood.o bin/output.o bin/input.o bin/model_2.o
+	$(CC) $(CO) -o bin/stm2_mcmc bin/main.o bin/engine.o bin/parameters.o \
+	bin/likelihood.o bin/output.o bin/input.o bin/model_2.o $(GSL)
 
 # four state
 bin/stm4_mcmc: bin/main.o bin/engine.o bin/parameters.o bin/likelihood.o bin/output.o \
 bin/input.o bin/model_4.o
-	$(CC) $(CO) $(GSL) -o bin/stm4_mcmc bin/main.o bin/engine.o bin/parameters.o \
-	bin/likelihood.o bin/output.o bin/input.o bin/model_4.o
+	$(CC) $(CO) -o bin/stm4_mcmc bin/main.o bin/engine.o bin/parameters.o \
+	bin/likelihood.o bin/output.o bin/input.o bin/model_4.o $(GSL)
+
 
 
 # object files

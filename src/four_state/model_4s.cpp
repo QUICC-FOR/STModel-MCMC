@@ -132,9 +132,9 @@ STM::ParMap STMTransition::generate_transform_rates(const STM::ParMap & p) const
 			p.at("bt3")*pow(env1,2) + p.at("bt4")*pow(env2,2) + p.at("bt5")*pow(env1,3) + 
 			p.at("bt6")*pow(env2,3);
 
-	transformLogitParams["theta"] = p.at("t0") + p.at("t1")*env1 + p.at("t2")*env2 + 
-			p.at("t3")*pow(env1,2) + p.at("t4")*pow(env2,2) + p.at("t5")*pow(env1,3) + 
-			p.at("t6")*pow(env2,3);
+	transformLogitParams["theta"] = p.at("th0") + p.at("th1")*env1 + p.at("th2")*env2 + 
+			p.at("th3")*pow(env1,2) + p.at("th4")*pow(env2,2) + p.at("th5")*pow(env1,3) + 
+			p.at("th6")*pow(env2,3);
 
 	transformLogitParams["theta_t"] = p.at("tt0") + p.at("tt1")*env1 +  p.at("tt2")*env2 + 
 			p.at("tt3")*pow(env1,2) + p.at("tt4")*pow(env2,2) + p.at("tt5")*pow(env1,3) + 
