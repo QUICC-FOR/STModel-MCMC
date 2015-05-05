@@ -30,7 +30,7 @@ struct ModelSettings
 	
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
 			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
-			burnin(0), targetInterval(1), numThreads(8), outDir("output"), resume(false),
+			burnin(0), targetInterval(1), numThreads(8), outDir("."), resume(false),
 			outMethod(STMOutput::OutputMethodType::CSV), resumeFile("") {}
 };
 
