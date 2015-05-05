@@ -29,6 +29,7 @@
 
 # data & results
 run*
+initForFit*
 
 src/ref*
 bin/*
