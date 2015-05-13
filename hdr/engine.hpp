@@ -57,6 +57,7 @@ class Metropolis
 	void serialize_all() const;
 	std::string serialize(char sep) const;
 	static std::string version();
+	void regression_adapt(int numSteps, int stepSize);
 
 	
 	// pointers to objects that the engine doesn't own, but that it uses

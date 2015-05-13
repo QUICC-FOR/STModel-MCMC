@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <unistd.h>
 #include <gsl/gsl_randist.h>
-
+#include <gsl/gsl_fit.h>
 
 namespace {
 	std::string timestamp()
@@ -170,6 +170,52 @@ if(not parameters.adapted())
 	Implementation of private functions: here there be dragons
 */
 
+
+void Metropolis::regression_adapt(int numSteps, int stepSize)
+{
+	std::vector<STM::ParName> parNames (parameters.names());
+	
+	std::map<STM::ParName, std::map<std::string, double *> > regressionData;
+	for(const auto & par : parNames)
+	{
+		regressionData[par]["log_variance"] = new double [numSteps];
+		regressionData[par]["acceptance"] = new double [numSteps];
+	}
+	
+	for(int i = 0; i < numSteps; i++)
+	{
+		// compute acceptance rates for the current variance term
+		parameters.set_acceptance_rates(do_sample(stepSize));
+	
+		for(const auto & par : parNames)
+		{
+			// save regression data for each parameter
+			regressionData[par]["log_variance"][i] = std::log(parameters.sampler_variance(par));
+			regressionData[par]["acceptance"][i] = parameters.acceptance_rate(par);
+			
+			// choose new variances at random for each parameter; drawn from a gamma with mean 2.38 and sd 2
+			parameters.set_sampler_variance(par, std::log(gsl_ran_gamma(rng.get(), 1.4161, 1.680672)));
+		}
+	
+	}
+	
+	// perform regression for each parameter and clean up
+	double beta0, beta1, cov00, cov01, cov11, sumsq;
+	for(const auto & par : parNames)
+	{
+		gsl_fit_linear(regressionData[par]["log_variance"], 1, 
+				regressionData[par]["acceptance"], 1, numSteps, &beta0, &beta1, &cov00,
+				&cov01, &cov11, &sumsq);
+
+		double targetVariance = std::exp((parameters.optimal_acceptance_rate() - beta0)/beta1);
+		// need to put in some error checking here where if I get a crazy answer we just fall back to the default
+		parameters.set_sampler_variance(par, targetVariance);
+		delete [] regressionData[par]["log_variance"];
+		delete [] regressionData[par]["acceptance"];
+	}
+}
+
+
 void Metropolis::auto_adapt()
 {
 	if(outputLevel >= EngineOutputLevel::Normal) 
@@ -182,7 +228,9 @@ void Metropolis::auto_adapt()
 	int oldThin = thinSize;
 	thinSize = 1;
 	
-	int nLoops = 0;
+	regression_adapt(10, 100); // use the first two loops to try a regression approach
+	int nLoops = 2;
+	
 	while(nLoops < minAdaptationLoops and (not parameters.adapted() or nLoops >= maxAdaptationLoops))	
 	{
 		parameters.set_acceptance_rates(do_sample(adaptationSampleSize));
