@@ -33,7 +33,7 @@ struct ParameterSettings
 	
 	ParameterSettings() {}
 	
-	ParameterSettings(STM::ParName parName, STM::ParValue init, double var = 1, 
+	ParameterSettings(STM::ParName parName, STM::ParValue init, double var = 2.38, 
 			double acceptanceRate = 0): name(parName), initialValue(init), variance(var), 
 			acceptanceRate(acceptanceRate) {}
 };
@@ -105,8 +105,11 @@ class STModelParameters
 	*/
 	void set_acceptance_rates(const std::map<STM::ParName, double> & rates);
 	void set_acceptance_rate(const STM::ParName & par, double rate);
-	int not_adapted(const STM::ParName & par) const;
+	double acceptance_rate(const STM::ParName & par) const;
+	double optimal_acceptance_rate() const;
+	int adaptation_status(const STM::ParName & par) const;
 	bool adapted() const;
+	bool adapted(STM::ParName par) const;
 	std::string str_acceptance_rates(bool inColor = false) const;
 	std::string str_sampling_variance(bool inColor = false) const;
 
@@ -133,6 +136,7 @@ class STModelParameters
 	static std::vector<STM::ParName> parNames;
 	static std::map<STM::ParName, ParameterSettings> parSettings;
 	static std::vector<double> targetAcceptanceInterval;
+	static double optimalAcceptanceRate;
 
 	// the data below is owned by each individual object
 	double iterationCount;

@@ -69,13 +69,14 @@ class Metropolis
 	STMParameters::STModelParameters parameters;
 	std::shared_ptr<gsl_rng> rng;
 	double currentPosteriorProb;
-	double adaptationRate;
 
 	// settings
 	int outputBufferSize;
 	int thinSize;
 	int burnin;
 	int adaptationSampleSize;
+	int minAdaptationLoops;
+	int maxAdaptationLoops;
 	bool rngSetSeed;
 	int rngSeed;
 	EngineOutputLevel outputLevel;

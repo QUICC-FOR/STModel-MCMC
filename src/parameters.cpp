@@ -34,7 +34,8 @@ namespace STMParameters
 // static variable definition
 std::vector<STM::ParName> STModelParameters::parNames;
 std::map<STM::ParName, ParameterSettings> STModelParameters::parSettings;
-std::vector<double> STModelParameters::targetAcceptanceInterval {0.27, 0.34};
+double STModelParameters::optimalAcceptanceRate = 0.234;
+std::vector<double> STModelParameters::targetAcceptanceInterval = {0.15, 0.5};
 
 
 /*
@@ -70,6 +71,7 @@ STModelParameters::STModelParameters(STMInput::SerializationData & sd)
 	
 	STModelParameters::targetAcceptanceInterval = STMInput::str_convert<double>(sd.at("targetAcceptanceInterval"));
 	iterationCount = STMInput::str_convert<double>(sd.at("iterationCount")[0]);
+	STModelParameters::optimalAcceptanceRate = STMInput::str_convert<double>(sd.at("optimalAcceptanceRate")[0]);
 	
 }
 
@@ -100,9 +102,9 @@ std::string STModelParameters::serialize(char s) const
 	for(const auto & pn : pNames) result << s << pAcceptance[pn];
 
 	result << "\ntargetAcceptanceInterval";
-	for(const auto & v : targetAcceptanceInterval)
-		result << s << v;
-	result << "\niterationCount" << s << iteration();
+	for(const auto & v : targetAcceptanceInterval) result << s << v;
+	result << "\noptimalAcceptanceRate" << s << optimalAcceptanceRate << '\n';
+	result << "iterationCount" << s << iteration();
 	
 	result << "\nparameterValues";
 	for(const auto & pn : pNames) result << s << parameterValues.at(pn);
@@ -130,6 +132,9 @@ void STModelParameters::set_acceptance_rate(const STM::ParName & par, double rat
 { parSettings.at(par).acceptanceRate = rate; }
 
 
+double STModelParameters::acceptance_rate(const STM::ParName & par) const
+{ return parSettings.at(par).acceptanceRate; }
+
 std::string STModelParameters::str_acceptance_rates(bool inColor) const
 {
 	std::stringstream res;
@@ -145,7 +150,7 @@ std::string STModelParameters::str_acceptance_rates(bool inColor) const
 	for(const auto ps: parSettings) {
 		if(inColor)
 		{
-			if(not_adapted(ps.first))
+			if(not adapted(ps.first))
 				res << red;
 			else
 				res << cyan;
@@ -174,7 +179,7 @@ std::string STModelParameters::str_sampling_variance(bool inColor) const
 	for(const auto ps: parSettings) {
 		if(inColor)
 		{
-			if(not_adapted(ps.first))
+			if(not adapted(ps.first))
 				res << red;
 			else
 				res << cyan;
@@ -190,11 +195,13 @@ std::string STModelParameters::str_sampling_variance(bool inColor) const
 }
 
 
-int STModelParameters::not_adapted(const STM::ParName & par) const
+double STModelParameters::optimal_acceptance_rate() const
+{ return optimalAcceptanceRate; }
+int STModelParameters::adaptation_status(const STM::ParName & par) const
 {
-	if(parSettings.at(par).acceptanceRate < targetAcceptanceInterval[0])
+	if(parSettings.at(par).acceptanceRate < optimal_acceptance_rate())
 		return -1;
-	else if(parSettings.at(par).acceptanceRate  > targetAcceptanceInterval[1])
+	else if(parSettings.at(par).acceptanceRate  > optimal_acceptance_rate())
 		return 1;
 	else return 0;
 }
@@ -202,10 +209,23 @@ int STModelParameters::not_adapted(const STM::ParName & par) const
 
 bool STModelParameters::adapted() const
 {
-	int count = 0;
+	bool result = false;
 	for(const auto & p : names())
-		count += std::abs(not_adapted(p));
-	if(count > 0) return false;
+	{
+		if(not adapted(p))
+		{
+			result = true;
+			break;
+		}
+	}
+	return result;
+}
+
+bool STModelParameters::adapted(STM::ParName par) const
+{
+	if(parSettings.at(par).acceptanceRate < targetAcceptanceInterval[0] or 
+			parSettings.at(par).acceptanceRate > targetAcceptanceInterval[1])
+		return false;
 	else return true;
 }
 

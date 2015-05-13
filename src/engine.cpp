@@ -25,7 +25,7 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis0.9";
+	std::string engineVersion = "Metropolis1.0";
 }
 
 namespace STMEngine {
@@ -48,7 +48,8 @@ rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSi
 posteriorOptions(outOpt),
 
 // the parameters below have default values with no support for changing them
-outputBufferSize(500), adaptationSampleSize(100), adaptationRate(1.1)
+minAdaptationLoops(5), maxAdaptationLoops(25), adaptationSampleSize(500), 
+outputBufferSize(500)
 {
 	// check pointers
 	if(!queue || !lhood)
@@ -89,11 +90,12 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 		throw std::runtime_error("Metropolis: passed null pointer on construction");
 
 	currentPosteriorProb = STMInput::str_convert<double>(esd.at("currentPosteriorProb")[0]);
-	adaptationRate = STMInput::str_convert<double>(esd.at("adaptationRate")[0]);
 	outputBufferSize = STMInput::str_convert<int>(esd.at("outputBufferSize")[0]);
 	thinSize = STMInput::str_convert<int>(esd.at("thinSize")[0]);
 	burnin = STMInput::str_convert<int>(esd.at("burnin")[0]);
 	adaptationSampleSize = STMInput::str_convert<int>(esd.at("adaptationSampleSize")[0]);
+	adaptationSampleSize = STMInput::str_convert<int>(esd.at("minAdaptationLoops")[0]);
+	adaptationSampleSize = STMInput::str_convert<int>(esd.at("maxAdaptationLoops")[0]);
 	rngSeed = STMInput::str_convert<int>(esd.at("rngSeed")[0]);
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
@@ -170,25 +172,29 @@ if(not parameters.adapted())
 
 void Metropolis::auto_adapt()
 {
-	if(outputLevel >= EngineOutputLevel::Normal) {
+	if(outputLevel >= EngineOutputLevel::Normal) 
+	{
 		std::cerr << timestamp() << " Starting automatic adaptation" << std::endl;
 	}
-	std::vector<STM::ParName> parNames (parameters.names());		
-	while(!parameters.adapted()) {
+	std::vector<STM::ParName> parNames (parameters.names());
+	
+	// disable thinning for the adaptation phase
+	int oldThin = thinSize;
+	thinSize = 1;
+	
+	int nLoops = 0;
+	while(nLoops < minAdaptationLoops and (not parameters.adapted() or nLoops >= maxAdaptationLoops))	
+	{
 		parameters.set_acceptance_rates(do_sample(adaptationSampleSize));
 		for(const auto & par : parNames) {
-			switch(parameters.not_adapted(par)) {
-			case -1 :
-				parameters.set_sampler_variance(par, parameters.sampler_variance(par) / 
-						adaptationRate);
-				break;
-			case 1 :
-				parameters.set_sampler_variance(par, parameters.sampler_variance(par) * 
-						adaptationRate);
-				break;
-			default:
-				break;
-			}
+			/* adaptation status returns -1 for too low, +1 for too high, so this will 
+			make the variance larger if the adaptation rate is too low and smaller if
+			it is too high */
+			double ratio = pow(parameters.acceptance_rate(par) / 
+					parameters.optimal_acceptance_rate(), 
+					parameters.adaptation_status(par));
+			parameters.set_sampler_variance(par, ratio * parameters.sampler_variance(par));
+			
 		}
 		if(outputLevel >= EngineOutputLevel::Talkative) {
 			std::cerr << "\n    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
@@ -196,15 +202,16 @@ void Metropolis::auto_adapt()
 			std::cerr << "    sampler variance:\n";
 			std::cerr << "    " << parameters.str_sampling_variance(isatty(fileno(stderr))) << std::endl;
 		}
-		adaptationSampleSize *= 1.25;
 		currentSamples.clear();
 		if(saveResumeData)
 			serialize_all();
 	}
-//	parameters.reset(); // if disabled, this will include adaptation samples in the burnin
+	parameters.reset(); // adaptation samples are not included in the burnin period
 	if(outputLevel >= EngineOutputLevel::Normal) {
 		std::cerr << timestamp() << " Adaptation completed successfully" << std::endl;
 	}
+	
+	thinSize = oldThin;
 }
 
 void Metropolis::serialize_all() const
@@ -250,11 +257,12 @@ std::string Metropolis::serialize(char sep) const
 	result << "thinSize" << sep << thinSize << "\n";
 	result << "burnin" << sep << burnin << "\n";
 	result << "adaptationSampleSize" << sep << adaptationSampleSize << "\n";
+	result << "minAdaptationLoops" << sep << minAdaptationLoops << "\n";
+	result << "maxAdaptationLoops" << sep << maxAdaptationLoops << "\n";
 	result << "rngSetSeed" << sep << rngSetSeed << "\n";
 	result << "rngSeed" << sep << rngSeed << "\n";
 	result << "outputLevel" << sep << int(outputLevel) << "\n";
 	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
-	result << "adaptationRate" << sep << adaptationRate << "\n";
 	
 	return result.str();
 }
