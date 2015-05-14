@@ -11,7 +11,8 @@
 #include <stdexcept>
 #include <unistd.h>
 #include <gsl/gsl_randist.h>
-
+#include <gsl/gsl_statistics_double.h>
+#include <gsl/gsl_fit.h>
 
 namespace {
 	std::string timestamp()
@@ -25,7 +26,7 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis0.9";
+	std::string engineVersion = "Metropolis1.0";
 }
 
 namespace STMEngine {
@@ -48,7 +49,8 @@ rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSi
 posteriorOptions(outOpt),
 
 // the parameters below have default values with no support for changing them
-outputBufferSize(500), adaptationSampleSize(100), adaptationRate(1.1)
+minAdaptationLoops(5), maxAdaptationLoops(25), adaptationSampleSize(500), 
+outputBufferSize(500)
 {
 	// check pointers
 	if(!queue || !lhood)
@@ -89,11 +91,12 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 		throw std::runtime_error("Metropolis: passed null pointer on construction");
 
 	currentPosteriorProb = STMInput::str_convert<double>(esd.at("currentPosteriorProb")[0]);
-	adaptationRate = STMInput::str_convert<double>(esd.at("adaptationRate")[0]);
 	outputBufferSize = STMInput::str_convert<int>(esd.at("outputBufferSize")[0]);
 	thinSize = STMInput::str_convert<int>(esd.at("thinSize")[0]);
 	burnin = STMInput::str_convert<int>(esd.at("burnin")[0]);
 	adaptationSampleSize = STMInput::str_convert<int>(esd.at("adaptationSampleSize")[0]);
+	adaptationSampleSize = STMInput::str_convert<int>(esd.at("minAdaptationLoops")[0]);
+	adaptationSampleSize = STMInput::str_convert<int>(esd.at("maxAdaptationLoops")[0]);
 	rngSeed = STMInput::str_convert<int>(esd.at("rngSeed")[0]);
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
@@ -109,8 +112,8 @@ void Metropolis::run_sampler(int n)
 {
 	set_up_rng();
 
-if(not parameters.adapted())
-	auto_adapt();
+	if(not parameters.adapted())
+		auto_adapt();
 
 	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
@@ -168,27 +171,101 @@ if(not parameters.adapted())
 	Implementation of private functions: here there be dragons
 */
 
+
+void Metropolis::regression_adapt(int numSteps, int stepSize)
+{
+	std::vector<STM::ParName> parNames (parameters.names());
+	
+	std::map<STM::ParName, std::map<std::string, double *> > regressionData;
+	for(const auto & par : parNames)
+	{
+		regressionData[par]["log_variance"] = new double [numSteps];
+		regressionData[par]["variance"] = new double [numSteps];
+		regressionData[par]["acceptance"] = new double [numSteps];
+	}
+	
+	for(int i = 0; i < numSteps; i++)
+	{
+		// compute acceptance rates for the current variance term
+		parameters.set_acceptance_rates(do_sample(stepSize));
+	
+		for(const auto & par : parNames)
+		{
+			// save regression data for each parameter
+			regressionData[par]["log_variance"][i] = std::log(parameters.sampler_variance(par));
+			regressionData[par]["variance"][i] = parameters.sampler_variance(par);
+			regressionData[par]["acceptance"][i] = parameters.acceptance_rate(par);
+			
+			// choose new variances at random for each parameter; drawn from a gamma with mean 2.38 and sd 2
+			parameters.set_sampler_variance(par, gsl_ran_gamma(rng.get(), 1.4161, 1.680672));
+		}
+	
+	}
+	
+	// perform regression for each parameter and clean up
+	for(const auto & par : parNames)
+	{
+		// first compute the correlation for variance and log_variance, use whichever is higher
+		double corVar = gsl_stats_correlation(regressionData[par]["variance"], 1,
+				regressionData[par]["acceptance"], 1, numSteps);
+		double corLogVar = gsl_stats_correlation(regressionData[par]["log_variance"], 1,
+				regressionData[par]["acceptance"], 1, numSteps);
+
+		double beta0, beta1, cov00, cov01, cov11, sumsq, targetVariance;
+		if(corVar >= corLogVar)
+		{
+			gsl_fit_linear(regressionData[par]["variance"], 1, 
+					regressionData[par]["acceptance"], 1, numSteps, &beta0, &beta1, 
+					&cov00, &cov01, &cov11, &sumsq);
+			targetVariance = (parameters.optimal_acceptance_rate() - beta0)/beta1;
+		} else
+		{
+			gsl_fit_linear(regressionData[par]["log_variance"], 1, 
+					regressionData[par]["acceptance"], 1, numSteps, &beta0, &beta1,
+					&cov00, &cov01, &cov11, &sumsq);
+			targetVariance = std::exp((parameters.optimal_acceptance_rate() - beta0)/beta1);
+		}
+		// put some reasonable caps on the starting variance to avoid nonsense answers
+		// resulting from linear extrapolation
+		if(targetVariance <= 0) targetVariance = 0.05;
+		if(targetVariance >= 1e4) targetVariance = 1e4;
+		
+		parameters.set_sampler_variance(par, targetVariance);
+
+		delete [] regressionData[par]["log_variance"];
+		delete [] regressionData[par]["variance"];
+		delete [] regressionData[par]["acceptance"];
+	}
+}
+
+
 void Metropolis::auto_adapt()
 {
-	if(outputLevel >= EngineOutputLevel::Normal) {
+	if(outputLevel >= EngineOutputLevel::Normal) 
+	{
 		std::cerr << timestamp() << " Starting automatic adaptation" << std::endl;
 	}
-	std::vector<STM::ParName> parNames (parameters.names());		
-	while(!parameters.adapted()) {
+	std::vector<STM::ParName> parNames (parameters.names());
+	
+	// disable thinning for the adaptation phase
+	int oldThin = thinSize;
+	thinSize = 1;
+	
+	regression_adapt(10, 100); // use the first two loops to try a regression approach
+	int nLoops = 2;
+	
+	while(nLoops < minAdaptationLoops and (not parameters.adapted() or nLoops >= maxAdaptationLoops))	
+	{
 		parameters.set_acceptance_rates(do_sample(adaptationSampleSize));
 		for(const auto & par : parNames) {
-			switch(parameters.not_adapted(par)) {
-			case -1 :
-				parameters.set_sampler_variance(par, parameters.sampler_variance(par) / 
-						adaptationRate);
-				break;
-			case 1 :
-				parameters.set_sampler_variance(par, parameters.sampler_variance(par) * 
-						adaptationRate);
-				break;
-			default:
-				break;
-			}
+			/* adaptation status returns -1 for too low, +1 for too high, so this will 
+			make the variance larger if the adaptation rate is too low and smaller if
+			it is too high */
+			double ratio = pow(parameters.acceptance_rate(par) / 
+					parameters.optimal_acceptance_rate(), 
+					parameters.adaptation_status(par));
+			parameters.set_sampler_variance(par, ratio * parameters.sampler_variance(par));
+			
 		}
 		if(outputLevel >= EngineOutputLevel::Talkative) {
 			std::cerr << "\n    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
@@ -196,15 +273,16 @@ void Metropolis::auto_adapt()
 			std::cerr << "    sampler variance:\n";
 			std::cerr << "    " << parameters.str_sampling_variance(isatty(fileno(stderr))) << std::endl;
 		}
-		adaptationSampleSize *= 1.25;
 		currentSamples.clear();
 		if(saveResumeData)
 			serialize_all();
 	}
-//	parameters.reset(); // if disabled, this will include adaptation samples in the burnin
+	parameters.reset(); // adaptation samples are not included in the burnin period
 	if(outputLevel >= EngineOutputLevel::Normal) {
 		std::cerr << timestamp() << " Adaptation completed successfully" << std::endl;
 	}
+	
+	thinSize = oldThin;
 }
 
 void Metropolis::serialize_all() const
@@ -250,11 +328,12 @@ std::string Metropolis::serialize(char sep) const
 	result << "thinSize" << sep << thinSize << "\n";
 	result << "burnin" << sep << burnin << "\n";
 	result << "adaptationSampleSize" << sep << adaptationSampleSize << "\n";
+	result << "minAdaptationLoops" << sep << minAdaptationLoops << "\n";
+	result << "maxAdaptationLoops" << sep << maxAdaptationLoops << "\n";
 	result << "rngSetSeed" << sep << rngSetSeed << "\n";
 	result << "rngSeed" << sep << rngSeed << "\n";
 	result << "outputLevel" << sep << int(outputLevel) << "\n";
 	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
-	result << "adaptationRate" << sep << adaptationRate << "\n";
 	
 	return result.str();
 }
