@@ -209,12 +209,12 @@ int STModelParameters::adaptation_status(const STM::ParName & par) const
 
 bool STModelParameters::adapted() const
 {
-	bool result = false;
+	bool result = true;
 	for(const auto & p : names())
 	{
 		if(not adapted(p))
 		{
-			result = true;
+			result = false;
 			break;
 		}
 	}

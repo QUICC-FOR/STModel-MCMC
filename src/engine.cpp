@@ -111,8 +111,8 @@ void Metropolis::run_sampler(int n)
 {
 	set_up_rng();
 
-if(not parameters.adapted())
-	auto_adapt();
+	if(not parameters.adapted())
+		auto_adapt();
 
 	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
@@ -179,6 +179,7 @@ void Metropolis::regression_adapt(int numSteps, int stepSize)
 	for(const auto & par : parNames)
 	{
 		regressionData[par]["log_variance"] = new double [numSteps];
+		regressionData[par]["variance"] = new double [numSteps];
 		regressionData[par]["acceptance"] = new double [numSteps];
 	}
 	
@@ -191,26 +192,47 @@ void Metropolis::regression_adapt(int numSteps, int stepSize)
 		{
 			// save regression data for each parameter
 			regressionData[par]["log_variance"][i] = std::log(parameters.sampler_variance(par));
+			regressionData[par]["variance"][i] = parameters.sampler_variance(par);
 			regressionData[par]["acceptance"][i] = parameters.acceptance_rate(par);
 			
 			// choose new variances at random for each parameter; drawn from a gamma with mean 2.38 and sd 2
-			parameters.set_sampler_variance(par, std::log(gsl_ran_gamma(rng.get(), 1.4161, 1.680672)));
+			parameters.set_sampler_variance(par, gsl_ran_gamma(rng.get(), 1.4161, 1.680672));
 		}
 	
 	}
 	
 	// perform regression for each parameter and clean up
-	double beta0, beta1, cov00, cov01, cov11, sumsq;
 	for(const auto & par : parNames)
 	{
-		gsl_fit_linear(regressionData[par]["log_variance"], 1, 
-				regressionData[par]["acceptance"], 1, numSteps, &beta0, &beta1, &cov00,
-				&cov01, &cov11, &sumsq);
+		// first compute the correlation for variance and log_variance, use whichever is higher
+		double corVar = gsl_stats_correlation(regressionData[par]["variance"], 1
+				regressionData[par]["acceptance"], 1, numSteps);
+		double corLogVar = gsl_stats_correlation(regressionData[par]["log_variance"], 1
+				regressionData[par]["acceptance"], 1, numSteps);
 
-		double targetVariance = std::exp((parameters.optimal_acceptance_rate() - beta0)/beta1);
-		// need to put in some error checking here where if I get a crazy answer we just fall back to the default
+		double beta0, beta1, cov00, cov01, cov11, sumsq, targetVariance;
+		if(corVar >= corLogVar)
+		{
+			gsl_fit_linear(regressionData[par]["variance"], 1, 
+					regressionData[par]["acceptance"], 1, numSteps, &beta0, &beta1, 
+					&cov00, &cov01, &cov11, &sumsq);
+			targetVariance = (parameters.optimal_acceptance_rate() - beta0)/beta1);
+		} else
+		{
+			gsl_fit_linear(regressionData[par]["log_variance"], 1, 
+					regressionData[par]["acceptance"], 1, numSteps, &beta0, &beta1,
+					&cov00, &cov01, &cov11, &sumsq);
+			targetVariance = std::exp((parameters.optimal_acceptance_rate() - beta0)/beta1);
+		}
+		// put some reasonable caps on the starting variance to avoid nonsense answers
+		// resulting from linear extrapolation
+		if(targetVariance <= 0) targetVariance = 0.05;
+		if(targetVariance >= 1e4) targetVariance = 1e4;
+		
 		parameters.set_sampler_variance(par, targetVariance);
+
 		delete [] regressionData[par]["log_variance"];
+		delete [] regressionData[par]["variance"];
 		delete [] regressionData[par]["acceptance"];
 	}
 }
