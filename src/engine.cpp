@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <unistd.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_fit.h>
 
 namespace {
@@ -205,9 +206,9 @@ void Metropolis::regression_adapt(int numSteps, int stepSize)
 	for(const auto & par : parNames)
 	{
 		// first compute the correlation for variance and log_variance, use whichever is higher
-		double corVar = gsl_stats_correlation(regressionData[par]["variance"], 1
+		double corVar = gsl_stats_correlation(regressionData[par]["variance"], 1,
 				regressionData[par]["acceptance"], 1, numSteps);
-		double corLogVar = gsl_stats_correlation(regressionData[par]["log_variance"], 1
+		double corLogVar = gsl_stats_correlation(regressionData[par]["log_variance"], 1,
 				regressionData[par]["acceptance"], 1, numSteps);
 
 		double beta0, beta1, cov00, cov01, cov11, sumsq, targetVariance;
@@ -216,7 +217,7 @@ void Metropolis::regression_adapt(int numSteps, int stepSize)
 			gsl_fit_linear(regressionData[par]["variance"], 1, 
 					regressionData[par]["acceptance"], 1, numSteps, &beta0, &beta1, 
 					&cov00, &cov01, &cov11, &sumsq);
-			targetVariance = (parameters.optimal_acceptance_rate() - beta0)/beta1);
+			targetVariance = (parameters.optimal_acceptance_rate() - beta0)/beta1;
 		} else
 		{
 			gsl_fit_linear(regressionData[par]["log_variance"], 1, 
