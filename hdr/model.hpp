@@ -94,7 +94,6 @@ class STMTransition
 
 
 
-
 // IMPLEMENTATION
 
 inline STM::ParValue transform_interval(STM::ParValue val, int originalInterval, 
