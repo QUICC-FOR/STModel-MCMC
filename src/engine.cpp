@@ -251,11 +251,7 @@ void Metropolis::auto_adapt()
 	int oldThin = thinSize;
 	thinSize = 1;
 	
-//	regression_adapt(10, 100); // use the first two loops to try a regression approach
-	parameters.set_sampler_variance(parNames[0], 0.01);
-	parameters.set_sampler_variance(parNames[1], 6);
-	adaptationSampleSize = 100;
-	
+	regression_adapt(10, 100); // use the first two loops to try a regression approach	
 	int nLoops = 2;
 	
 	while(nLoops < minAdaptationLoops and (not parameters.adapted() or nLoops >= maxAdaptationLoops))	
@@ -263,21 +259,12 @@ void Metropolis::auto_adapt()
 		nLoops++;
 		parameters.set_acceptance_rates(do_sample(adaptationSampleSize));
 
-		std::cerr << "Par   acceptance_rate   optimal    status   ratio   old_var   new_var\n";
 		for(const auto & par : parNames) {
 			double ratio;
 			if(parameters.acceptance_rate(par) == 0) 
 				ratio = 1e-2;
 			else
 				ratio = parameters.acceptance_rate(par) / parameters.optimal_acceptance_rate();
-
-			 
-			std::cerr << par << "   " << parameters.acceptance_rate(par) << "   ";
-			std::cerr << parameters.optimal_acceptance_rate() << "   ";
-			std::cerr << parameters.adaptation_status(par) << "   " << ratio << "   ";
-			std::cerr << parameters.sampler_variance(par) << "   ";
-			std::cerr << ratio * parameters.sampler_variance(par) << "\n";
-			parameters.set_sampler_variance(par, ratio * parameters.sampler_variance(par));			
 		}
 		
 		if(outputLevel >= EngineOutputLevel::Talkative) {
