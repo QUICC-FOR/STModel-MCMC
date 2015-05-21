@@ -197,6 +197,8 @@ std::string STModelParameters::str_sampling_variance(bool inColor) const
 
 double STModelParameters::optimal_acceptance_rate() const
 { return optimalAcceptanceRate; }
+
+
 int STModelParameters::adaptation_status(const STM::ParName & par) const
 {
 	if(parSettings.at(par).acceptanceRate < optimal_acceptance_rate())
