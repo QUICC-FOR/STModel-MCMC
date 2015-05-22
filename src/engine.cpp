@@ -266,6 +266,7 @@ void Metropolis::auto_adapt()
 			else
 				ratio = parameters.acceptance_rate(par) / parameters.optimal_acceptance_rate();
 		}
+		parameters.set_sampler_variance(par, ratio*parameters.sampler_variance(par));
 		
 		if(outputLevel >= EngineOutputLevel::Talkative) {
 			std::cerr << "\n    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
