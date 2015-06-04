@@ -46,8 +46,8 @@ std::vector<std::string> SerializationData::at(const std::string & key) const
 { return sData.at(key); }
 
 
-STMInputHelper::STMInputHelper (const char * filename, InputType type, bool useCube, 
-		char delim): useCube(useCube), prevalenceBaseName("prevalence")
+STMInputHelper::STMInputHelper (const char * filename, InputType type, 
+		char delim): prevalenceBaseName("prevalence")
 {
 	switch(type)
 	{
@@ -346,8 +346,7 @@ void STMInputHelper::read_transitions(std::ifstream &file, char delim)
 		double env2 = str_convert<double>(line.at(transColIndices.at("env2")));
 		int interval = str_convert<int>(line.at(transColIndices.at("interval")));
 
-		trans.push_back(STMModel::STMTransition(initial, final, env1, env2, prev, 
-				interval, useCube));
+		trans.push_back(STMModel::STMTransition(initial, final, env1, env2, prev, interval));
 	}
 }
 
