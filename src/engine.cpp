@@ -254,7 +254,7 @@ void Metropolis::auto_adapt()
 	regression_adapt(10, 100); // use the first two loops to try a regression approach	
 	int nLoops = 2;
 	
-	while(nLoops < minAdaptationLoops and (not parameters.adapted() or nLoops >= maxAdaptationLoops))	
+	while(nLoops < minAdaptationLoops or (not parameters.adapted() and nLoops < maxAdaptationLoops))	
 	{
 		nLoops++;
 		parameters.set_acceptance_rates(do_sample(adaptationSampleSize));
