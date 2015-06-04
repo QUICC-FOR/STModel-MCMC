@@ -26,7 +26,7 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis1.0";
+	std::string engineVersion = "Metropolis1.1";
 }
 
 namespace STMEngine {
@@ -346,7 +346,7 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 // returns a map of acceptance rates keyed by parameter name
 {
 	// 	shuffle the order of parameters
-	std::vector<STM::ParName> parNames (parameters.names());
+	std::vector<STM::ParName> parNames (parameters.active_names());
 	std::random_shuffle(parNames.begin(), parNames.end(), 
 			[this](int n){ return gsl_rng_uniform_int(rng.get(), n); });
 	
