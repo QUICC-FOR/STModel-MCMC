@@ -63,13 +63,14 @@ STModelParameters::STModelParameters(STMInput::SerializationData & sd)
 {
 	STModelParameters::parNames = sd.at("parNames");
 	std::vector<STM::ParValue> inits = STMInput::str_convert<STM::ParValue>(sd.at("initialVals"));
+	std::vector<bool> isConstant = STMInput::str_convert<bool>(sd.at("isConstant"));
 	std::vector<double> var = STMInput::str_convert<double>(sd.at("samplerVariance"));
 	std::vector<double> accept = STMInput::str_convert<double>(sd.at("acceptanceRates"));
 	std::vector<STM::ParValue> vals = STMInput::str_convert<STM::ParValue>(sd.at("parameterValues"));
 	for(int i = 0; i < parNames.size(); i++)
 	{
-		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], var[i], 
-				accept[i]);
+		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], isConstant[i], 
+			var[i], accept[i]);
 		parameterValues[parNames[i]] = vals[i];
 	}
 	
@@ -90,12 +91,14 @@ std::string STModelParameters::serialize(char s) const
 	result << "\n";
 	
 	STM::ParMap initialVals, pVariance, pAcceptance;
+	std::map<STM::ParName, bool> pIsConstant;
 	for(const auto & pn : pNames)
 	{
 		const ParameterSettings & ps = parSettings[pn];
 		initialVals[pn] = ps.initialValue;
 		pVariance[pn] = ps.variance;
 		pAcceptance[pn] = ps.acceptanceRate;
+		pIsConstant[pn] = ps.isConstant;
 	}
 	
 	result << "initialVals";
@@ -104,6 +107,8 @@ std::string STModelParameters::serialize(char s) const
 	for(const auto & pn : pNames) result << s << pVariance[pn];
 	result << "\nacceptanceRates";
 	for(const auto & pn : pNames) result << s << pAcceptance[pn];
+	result << "\nisConstant";
+	for(const auto & pn : pNames) result << s << pIsConstant[pn];
 
 	result << "\ntargetAcceptanceInterval";
 	for(const auto & v : targetAcceptanceInterval) result << s << v;
