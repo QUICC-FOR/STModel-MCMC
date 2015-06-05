@@ -49,7 +49,7 @@ template<typename T> std::vector<T> str_convert(const std::vector<std::string> &
 class STMInputHelper
 {
 	public:
-	STMInputHelper (const char * filename, InputType type, bool useCube = false, char delim = ',');
+	STMInputHelper (const char * filename, InputType type, char delim = ',');
 	std::vector<STMParameters::ParameterSettings> parameter_inits();
 	std::map<std::string, STMLikelihood::PriorDist> priors();
 	std::vector<STMModel::STMTransition> transitions();
@@ -74,7 +74,6 @@ class STMInputHelper
 	std::vector<STMParameters::ParameterSettings> initialValues;
 	std::map<std::string, STMLikelihood::PriorDist> priorDists;
 	std::vector<STMModel::STMTransition> trans;
-	bool useCube;
 	std::string prevalenceBaseName;
 	std::map<std::string, STMInput::SerializationData> resumeData;
 };

@@ -3,7 +3,6 @@
 
 #include <map>
 #include <vector>
-// #include <exception>
 #include <string>
 #include "stmtypes.hpp"
 
@@ -30,12 +29,13 @@ struct ParameterSettings
 	STM::ParValue initialValue;
 	double variance;
 	double acceptanceRate;
+	bool isConstant;
 	
 	ParameterSettings() {}
 	
-	ParameterSettings(STM::ParName parName, STM::ParValue init, double var = 2.38, 
+	ParameterSettings(STM::ParName parName, STM::ParValue init, bool isConstant, double var = 2.38, 
 			double acceptanceRate = 0): name(parName), initialValue(init), variance(var), 
-			acceptanceRate(acceptanceRate) {}
+			acceptanceRate(acceptanceRate), isConstant(isConstant) {}
 };
 
 
@@ -119,7 +119,10 @@ class STModelParameters
 		names() returns a const reference to the list of parameter names; this function
 			is guaranteed to always return names in the same order for the duration of
 			the program (not just the life of a single instance of the STModelParameter 
-			class) 
+			class)
+		active_names() works as with names(), but returns only active parameters (i.e.,
+			parameters that will be varied by the sampler, instead of fixed to a constant
+			value)
 		reset() sets the parameter object to its initial state and returns the iteration 
 			counter to 0
 		increment(int n) increases the iteration counter by n (default of 1)
@@ -127,6 +130,7 @@ class STModelParameters
 	*/
 	size_t size() const;
 	const std::vector<STM::ParName> & names() const;
+	const std::vector<STM::ParName> & active_names() const;
 	void reset();
 	void increment(int n = 1);
 	int iteration() const;
@@ -134,6 +138,7 @@ class STModelParameters
 	private:	
 	// static variables; these are shared among ALL parameter objects
 	static std::vector<STM::ParName> parNames;
+	static std::vector<STM::ParName> activeParNames;
 	static std::map<STM::ParName, ParameterSettings> parSettings;
 	static std::vector<double> targetAcceptanceInterval;
 	static double optimalAcceptanceRate;
