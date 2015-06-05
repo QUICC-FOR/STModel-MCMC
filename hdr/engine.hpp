@@ -79,7 +79,7 @@ class Metropolis
 	int minAdaptationLoops;
 	int maxAdaptationLoops;
 	bool rngSetSeed;
-	int rngSeed;
+	unsigned long int rngSeed;
 	EngineOutputLevel outputLevel;
 	STMOutput::OutputOptions posteriorOptions;
 	
