@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unistd.h>
+#include <random>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_fit.h>
@@ -441,7 +442,11 @@ double Metropolis::log_posterior_prob(const STMParameters::STModelParameters & p
 
 void Metropolis::set_up_rng()
 {
-	int seed = (rngSetSeed ? rngSeed : (int) time(NULL));
-	gsl_rng_set(rng.get(), seed);
+	if(not rngSetSeed)
+	{
+		std::random_device rd;
+		rngSeed = rd();
+	}
+	gsl_rng_set(rng.get(), rngSeed);
 }
 } // namespace
