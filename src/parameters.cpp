@@ -33,9 +33,12 @@ namespace STMParameters
 
 // static variable definition
 std::vector<STM::ParName> STModelParameters::parNames;
+std::vector<STM::ParName> STModelParameters::activeParNames;
 std::map<STM::ParName, ParameterSettings> STModelParameters::parSettings;
 double STModelParameters::optimalAcceptanceRate = 0.234;
 std::vector<double> STModelParameters::targetAcceptanceInterval = {0.15, 0.5};
+
+
 
 
 /*
@@ -44,12 +47,13 @@ std::vector<double> STModelParameters::targetAcceptanceInterval = {0.15, 0.5};
 STModelParameters::STModelParameters(const std::vector<ParameterSettings> & initPars)
 {
 	for(const ParameterSettings & par : initPars) {
-
 		if(parSettings.count(par.name) == 0)
 			parSettings[par.name] = par;
-
 		if(std::find(parNames.begin(), parNames.end(), par.name) == parNames.end())
+		{
 			parNames.push_back(par.name);
+			if(par.active) activeParNames.push_back(par.name);
+		}
 	}
 	reset();
 }
@@ -119,7 +123,11 @@ std::string STModelParameters::serialize(char s) const
 const std::vector<STM::ParName> & STModelParameters::names() const
 { return parNames; }
 
+
+const std::vector<STM::ParName> & STModelParameters::active_names() const
+{ return activeParNames; }
 	
+
 void STModelParameters::set_acceptance_rates(const std::map<STM::ParName, double> 
 		& rates)
 {
