@@ -223,19 +223,33 @@ void STMInputHelper::read_inits(std::ifstream &file, char delim)
 		std::string parname = line.at(initColIndices.at("name"));
 		STM::ParValue init = str_convert<STM::ParValue>(
 				line.at(initColIndices.at("initialValue")));
+
 		bool setVariance = true;
 		double variance;
-		try {
+		try 
+		{
 			variance = str_convert<double>(line.at(initColIndices.at("samplerVariance")));
 		}
-		catch (std::out_of_range &e) {
+		catch (std::out_of_range &e) 
+		{
 			setVariance = false;
 		}
+		
+		bool isConstant;
+		try
+		{
+			isConstant = str_convert<bool>(line.at(initColIndices.at("isConstant")));
+		}
+		catch (std::out_of_range &e) 
+		{ 
+			isConstant = false;
+		}
+
 		STMParameters::ParameterSettings newParam;
 		if(setVariance)
-			newParam = STMParameters::ParameterSettings(parname, init, variance);
+			newParam = STMParameters::ParameterSettings(parname, init, isConstant, variance);
 		else
-			newParam = STMParameters::ParameterSettings(parname, init);
+			newParam = STMParameters::ParameterSettings(parname, init, isConstant);
 		
 		initialValues.push_back(newParam);
 		
@@ -268,6 +282,7 @@ void STMInputHelper::display_parameter_help() const
 	std::cerr << "        priorSD -- the standard deviation of the prior\n";
 	std::cerr << "    Optional:\n";
 	std::cerr << "        samplerVariance -- the variance (step size) to use for tuning the MH sampler\n" << std::endl;
+	std::cerr << "        isConstant -- if set to 1 (true), the parameter will remain fixed at the given starting value; if omitted, no parameters are constant" << std::endl;	
 }
 
 

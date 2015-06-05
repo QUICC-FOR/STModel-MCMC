@@ -29,13 +29,13 @@ struct ParameterSettings
 	STM::ParValue initialValue;
 	double variance;
 	double acceptanceRate;
-	bool active;
+	bool isConstant;
 	
 	ParameterSettings() {}
 	
-	ParameterSettings(STM::ParName parName, STM::ParValue init, double var = 2.38, 
-			double acceptanceRate = 0, bool isActive = true): name(parName), initialValue(init), variance(var), 
-			acceptanceRate(acceptanceRate), active(isActive) {}
+	ParameterSettings(STM::ParName parName, STM::ParValue init, bool isConstant, double var = 2.38, 
+			double acceptanceRate = 0): name(parName), initialValue(init), variance(var), 
+			acceptanceRate(acceptanceRate), isConstant(isConstant) {}
 };
 
 

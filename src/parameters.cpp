@@ -52,7 +52,7 @@ STModelParameters::STModelParameters(const std::vector<ParameterSettings> & init
 		if(std::find(parNames.begin(), parNames.end(), par.name) == parNames.end())
 		{
 			parNames.push_back(par.name);
-			if(par.active) activeParNames.push_back(par.name);
+			if(not par.isConstant) activeParNames.push_back(par.name);
 		}
 	}
 	reset();
