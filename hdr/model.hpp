@@ -72,7 +72,7 @@ class STMTransition
 {
 	public:
 	STMTransition(char state1, char state2, double env1, double env2, 
-			std::map<char, double> prevalence, int interval, bool useCube);
+			std::map<char, double> prevalence, int interval);
 
 	STM::ParValue transition_prob(const STM::ParMap & p, int targetInterval);
 
@@ -88,7 +88,6 @@ class STMTransition
 	double env1, env2;
 	STM::StateMap expected;
 	int interval;
-	bool useCubic;
 	TransProbFunction transProb;
 };
 
@@ -137,9 +136,8 @@ inline STM::ParValue STMTransition::transition_prob(const STM::ParMap & p, int t
 
 
 inline STMTransition::STMTransition(char state1, char state2, double env1, double env2, 
-		std::map<char, double> prevalence, int interval, bool useCube) : 
-		initial(state1), final(state2), env1(env1), env2(env2), interval(interval), 
-		useCubic(useCube)
+		std::map<char, double> prevalence, int interval) : 
+		initial(state1), final(state2), env1(env1), env2(env2), interval(interval)
 {
 	if(transitionFunctions.empty())
 		setup_transition_functions();

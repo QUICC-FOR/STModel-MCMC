@@ -33,9 +33,12 @@ namespace STMParameters
 
 // static variable definition
 std::vector<STM::ParName> STModelParameters::parNames;
+std::vector<STM::ParName> STModelParameters::activeParNames;
 std::map<STM::ParName, ParameterSettings> STModelParameters::parSettings;
 double STModelParameters::optimalAcceptanceRate = 0.234;
 std::vector<double> STModelParameters::targetAcceptanceInterval = {0.15, 0.5};
+
+
 
 
 /*
@@ -44,12 +47,13 @@ std::vector<double> STModelParameters::targetAcceptanceInterval = {0.15, 0.5};
 STModelParameters::STModelParameters(const std::vector<ParameterSettings> & initPars)
 {
 	for(const ParameterSettings & par : initPars) {
-
 		if(parSettings.count(par.name) == 0)
 			parSettings[par.name] = par;
-
 		if(std::find(parNames.begin(), parNames.end(), par.name) == parNames.end())
+		{
 			parNames.push_back(par.name);
+			if(not par.isConstant) activeParNames.push_back(par.name);
+		}
 	}
 	reset();
 }
@@ -59,13 +63,14 @@ STModelParameters::STModelParameters(STMInput::SerializationData & sd)
 {
 	STModelParameters::parNames = sd.at("parNames");
 	std::vector<STM::ParValue> inits = STMInput::str_convert<STM::ParValue>(sd.at("initialVals"));
+	std::vector<bool> isConstant = STMInput::str_convert<bool>(sd.at("isConstant"));
 	std::vector<double> var = STMInput::str_convert<double>(sd.at("samplerVariance"));
 	std::vector<double> accept = STMInput::str_convert<double>(sd.at("acceptanceRates"));
 	std::vector<STM::ParValue> vals = STMInput::str_convert<STM::ParValue>(sd.at("parameterValues"));
 	for(int i = 0; i < parNames.size(); i++)
 	{
-		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], var[i], 
-				accept[i]);
+		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], isConstant[i], 
+			var[i], accept[i]);
 		parameterValues[parNames[i]] = vals[i];
 	}
 	
@@ -86,12 +91,14 @@ std::string STModelParameters::serialize(char s) const
 	result << "\n";
 	
 	STM::ParMap initialVals, pVariance, pAcceptance;
+	std::map<STM::ParName, bool> pIsConstant;
 	for(const auto & pn : pNames)
 	{
 		const ParameterSettings & ps = parSettings[pn];
 		initialVals[pn] = ps.initialValue;
 		pVariance[pn] = ps.variance;
 		pAcceptance[pn] = ps.acceptanceRate;
+		pIsConstant[pn] = ps.isConstant;
 	}
 	
 	result << "initialVals";
@@ -100,6 +107,8 @@ std::string STModelParameters::serialize(char s) const
 	for(const auto & pn : pNames) result << s << pVariance[pn];
 	result << "\nacceptanceRates";
 	for(const auto & pn : pNames) result << s << pAcceptance[pn];
+	result << "\nisConstant";
+	for(const auto & pn : pNames) result << s << pIsConstant[pn];
 
 	result << "\ntargetAcceptanceInterval";
 	for(const auto & v : targetAcceptanceInterval) result << s << v;
@@ -119,7 +128,11 @@ std::string STModelParameters::serialize(char s) const
 const std::vector<STM::ParName> & STModelParameters::names() const
 { return parNames; }
 
+
+const std::vector<STM::ParName> & STModelParameters::active_names() const
+{ return activeParNames; }
 	
+
 void STModelParameters::set_acceptance_rates(const std::map<STM::ParName, double> 
 		& rates)
 {
