@@ -68,10 +68,11 @@ void STMInputHelper::setup_transitions(const char * filename, char delim)
 {
 	std::ifstream transFile;
 	transFile.open(filename);
+	if(not transFile.is_open())
 	{
-		std::stringstream err;
-		if(!transFile.is_open()) err << "Failed to open " << filename << "\n";
-		if(!err.str().empty()) throw std::runtime_error(err.str());
+		std::stringstream msg;
+		msg << "Error opening transition file: <" << filename << ">\n";
+		throw std::runtime_error(msg.str());
 	}
 
 	// get the column names from the first line of the CSVs and figure out their order
