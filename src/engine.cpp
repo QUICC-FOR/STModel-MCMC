@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unistd.h>
+#include <random>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_fit.h>
@@ -26,7 +27,7 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis1.0";
+	std::string engineVersion = "Metropolis1.1";
 }
 
 namespace STMEngine {
@@ -254,7 +255,7 @@ void Metropolis::auto_adapt()
 	regression_adapt(10, 100); // use the first two loops to try a regression approach	
 	int nLoops = 2;
 	
-	while(nLoops < minAdaptationLoops and (not parameters.adapted() or nLoops >= maxAdaptationLoops))	
+	while(nLoops < minAdaptationLoops or ((not parameters.adapted()) and nLoops < maxAdaptationLoops))	
 	{
 		nLoops++;
 		parameters.set_acceptance_rates(do_sample(adaptationSampleSize));
@@ -346,7 +347,7 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 // returns a map of acceptance rates keyed by parameter name
 {
 	// 	shuffle the order of parameters
-	std::vector<STM::ParName> parNames (parameters.names());
+	std::vector<STM::ParName> parNames (parameters.active_names());
 	std::random_shuffle(parNames.begin(), parNames.end(), 
 			[this](int n){ return gsl_rng_uniform_int(rng.get(), n); });
 	
@@ -441,7 +442,11 @@ double Metropolis::log_posterior_prob(const STMParameters::STModelParameters & p
 
 void Metropolis::set_up_rng()
 {
-	int seed = (rngSetSeed ? rngSeed : (int) time(NULL));
-	gsl_rng_set(rng.get(), seed);
+	if(not rngSetSeed)
+	{
+		std::random_device rd;
+		rngSeed = rd();
+	}
+	gsl_rng_set(rng.get(), rngSeed);
 }
 } // namespace

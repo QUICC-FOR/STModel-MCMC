@@ -94,15 +94,12 @@ STM::ParMap STMTransition::generate_transform_rates(const STM::ParMap & p) const
 {
 	STM::ParMap annualLogitParams;
 	annualLogitParams["gamma"] = p.at("g0") + p.at("g1")*env1 + p.at("g2")*env2 + 
-			p.at("g3")*pow(env1,2) + p.at("g4")*pow(env2,2);
+			p.at("g3")*pow(env1,2) + p.at("g4")*pow(env2,2) + p.at("g5")*pow(env1,3) + 
+			p.at("g6")*pow(env2,3);
 	annualLogitParams["epsilon"] = p.at("e0") + p.at("e1")*env1 + p.at("e2")*env2 + 
-			p.at("e3")*pow(env1,2) + p.at("e4")*pow(env2,2);
+			p.at("e3")*pow(env1,2) + p.at("e4")*pow(env2,2) + p.at("e5")*pow(env1,3) + 
+			p.at("e6")*pow(env2,3);
 	
-	if(useCubic)
-	{
-		annualLogitParams["gamma"] += p.at("g5")*pow(env1,3) + p.at("g6")*pow(env2,3);
-		annualLogitParams["epsilon"] += p.at("e5")*pow(env1,3) + p.at("e6")*pow(env2,3);
-	}
 	return annualLogitParams;
 }
 
