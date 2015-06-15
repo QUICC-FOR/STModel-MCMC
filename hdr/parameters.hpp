@@ -100,8 +100,7 @@ class STModelParameters
 		adapted()
 		returns true if all parameters are adapted
 		
-		str_acceptance_rates: output acceptance rates as a formatted string for logging
-		std_sampling_variance: same as above, but for the sampling variance
+		print_adaptation: print a columnar display of adaptation rates and variance
 	*/
 	void set_acceptance_rates(const std::map<STM::ParName, double> & rates);
 	void set_acceptance_rate(const STM::ParName & par, double rate);
@@ -111,8 +110,6 @@ class STModelParameters
 	bool adapted() const;
 	bool adapted(STM::ParName par) const;
 	void print_adaptation(bool inColor = false, int ncol=1) const;
-//	std::string str_acceptance_rates(bool inColor = false) const;
-//	std::string str_sampling_variance(bool inColor = false) const;
 
 	/*
 		Utility functions

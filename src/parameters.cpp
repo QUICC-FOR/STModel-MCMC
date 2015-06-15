@@ -178,7 +178,6 @@ void STModelParameters::print_adaptation(bool inColor, int ncol) const
 		// color stuff
 		if(inColor)
 		{
-//			std::cerr << "[ ";
 			if(not adapted(par))
 				std::cerr << red;
 			else 
@@ -200,65 +199,6 @@ void STModelParameters::print_adaptation(bool inColor, int ncol) const
 	}
 	std::cerr << "\n";
 }
-
-// std::string STModelParameters::str_acceptance_rates(bool inColor) const
-// {
-// 	std::stringstream res;
-// 	res << std::fixed;
-// 	res.precision(3);
-// 
-// 	std::string red = "\033[1;31m";
-// 	std::string cyan = "\033[1;36m";
-// 	std::string normal = "\033[0m";
-// 
-// 	if(inColor)
-// 		res << "[ ";
-// 	for(const auto ps: parSettings) {
-// 		if(inColor)
-// 		{
-// 			if(not adapted(ps.first))
-// 				res << red;
-// 			else
-// 				res << cyan;
-// 		}
-// 		res << ps.second.acceptanceRate << " ";
-// 	}
-// 	if(inColor)
-// 	{
-// 		res << normal;
-// 		res << "]";
-// 	}
-// 	return res.str();
-// }
-// 
-// 
-// std::string STModelParameters::str_sampling_variance(bool inColor) const
-// {
-// 	std::string red = "\033[1;31m";
-// 	std::string cyan = "\033[1;36m";
-// 	std::string normal = "\033[0m";
-// 	std::stringstream res;
-// 	res << std::fixed;
-// 	res.precision(3);
-// 	if(inColor)
-// 		res << "[ ";
-// 	for(const auto ps: parSettings) {
-// 		if(inColor)
-// 		{
-// 			if(not adapted(ps.first))
-// 				res << red;
-// 			else
-// 				res << cyan;
-// 		}
-// 		res << ps.second.variance << " ";
-// 	}
-// 	if(inColor)
-// 	{
-// 		res << normal;
-// 		res << "]";
-// 	}
-// 	return res.str();
-// }
 
 
 double STModelParameters::optimal_acceptance_rate() const
