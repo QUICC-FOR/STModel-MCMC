@@ -238,8 +238,9 @@ bool STModelParameters::adapted() const
 
 bool STModelParameters::adapted(STM::ParName par) const
 {
-	if(parSettings.at(par).acceptanceRate < targetAcceptanceInterval[0] or 
-			parSettings.at(par).acceptanceRate > targetAcceptanceInterval[1])
+	if(not parSettings.at(par).isConstant and 
+			(parSettings.at(par).acceptanceRate < targetAcceptanceInterval[0] or 
+			parSettings.at(par).acceptanceRate > targetAcceptanceInterval[1]))
 		return false;
 	else return true;
 }
