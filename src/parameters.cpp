@@ -24,6 +24,8 @@ STModel-MCMC : parameters.cpp
 #include <stdexcept>
 #include <algorithm>
 #include <sstream>
+#include <iomanip>
+#include <iostream>
 
 #include "../hdr/parameters.hpp"
 #include "../hdr/input.hpp"
@@ -148,64 +150,115 @@ void STModelParameters::set_acceptance_rate(const STM::ParName & par, double rat
 double STModelParameters::acceptance_rate(const STM::ParName & par) const
 { return parSettings.at(par).acceptanceRate; }
 
-std::string STModelParameters::str_acceptance_rates(bool inColor) const
-{
-	std::stringstream res;
-	res << std::fixed;
-	res.precision(3);
 
-	std::string red = "\033[1;31m";
-	std::string cyan = "\033[1;36m";
-	std::string normal = "\033[0m";
-
-	if(inColor)
-		res << "[ ";
-	for(const auto ps: parSettings) {
-		if(inColor)
-		{
-			if(not adapted(ps.first))
-				res << red;
-			else
-				res << cyan;
-		}
-		res << ps.second.acceptanceRate << " ";
-	}
-	if(inColor)
-	{
-		res << normal;
-		res << "]";
-	}
-	return res.str();
-}
-
-
-std::string STModelParameters::str_sampling_variance(bool inColor) const
+void STModelParameters::print_adaptation(bool inColor, int ncol) const
 {
 	std::string red = "\033[1;31m";
 	std::string cyan = "\033[1;36m";
 	std::string normal = "\033[0m";
-	std::stringstream res;
-	res << std::fixed;
-	res.precision(3);
-	if(inColor)
-		res << "[ ";
-	for(const auto ps: parSettings) {
+	int colCount = 0;
+	int colWidth [] = {6, 10, 10};
+	std::string colSpace = "     ";
+	
+	// print a header
+	for(int i = 0; i < ncol; i++)
+	{
+		std::cerr << std::left << std::setw(colWidth[0]) << "par";
+		std::cerr << std::right << std::setw(colWidth[1]) << "acceptance";
+		std::cerr << std::right << std::setw(colWidth[2]) << "variance";
+		std::cerr << colSpace;
+	}
+	std::cerr << "\n";
+	
+	std::cerr << std::fixed << std::setprecision(3);
+
+	for(const auto & par : active_names())
+	{
+		std::cerr << std::left << std::setw(colWidth[0]) << par;
+		// color stuff
 		if(inColor)
 		{
-			if(not adapted(ps.first))
-				res << red;
-			else
-				res << cyan;
+//			std::cerr << "[ ";
+			if(not adapted(par))
+				std::cerr << red;
+			else 
+				std::cerr << cyan;
 		}
-		res << ps.second.variance << " ";
+		std::cerr << std::right << std::setw(colWidth[1]) << parSettings.at(par).acceptanceRate;
+		std::cerr << std::right << std::setw(colWidth[2]) << parSettings.at(par).variance;
+		// turn off color
+		if(inColor)
+			std::cerr << normal;// << "]";
+		colCount++;
+		if(colCount == ncol)
+		{
+			std::cerr << "\n";
+			colCount = 0;
+		}
+		else
+			std::cerr << colSpace;
 	}
-	if(inColor)
-	{
-		res << normal;
-		res << "]";
-	}
-	return res.str();
+	std::cerr << "\n";
 }
+
+// std::string STModelParameters::str_acceptance_rates(bool inColor) const
+// {
+// 	std::stringstream res;
+// 	res << std::fixed;
+// 	res.precision(3);
+// 
+// 	std::string red = "\033[1;31m";
+// 	std::string cyan = "\033[1;36m";
+// 	std::string normal = "\033[0m";
+// 
+// 	if(inColor)
+// 		res << "[ ";
+// 	for(const auto ps: parSettings) {
+// 		if(inColor)
+// 		{
+// 			if(not adapted(ps.first))
+// 				res << red;
+// 			else
+// 				res << cyan;
+// 		}
+// 		res << ps.second.acceptanceRate << " ";
+// 	}
+// 	if(inColor)
+// 	{
+// 		res << normal;
+// 		res << "]";
+// 	}
+// 	return res.str();
+// }
+// 
+// 
+// std::string STModelParameters::str_sampling_variance(bool inColor) const
+// {
+// 	std::string red = "\033[1;31m";
+// 	std::string cyan = "\033[1;36m";
+// 	std::string normal = "\033[0m";
+// 	std::stringstream res;
+// 	res << std::fixed;
+// 	res.precision(3);
+// 	if(inColor)
+// 		res << "[ ";
+// 	for(const auto ps: parSettings) {
+// 		if(inColor)
+// 		{
+// 			if(not adapted(ps.first))
+// 				res << red;
+// 			else
+// 				res << cyan;
+// 		}
+// 		res << ps.second.variance << " ";
+// 	}
+// 	if(inColor)
+// 	{
+// 		res << normal;
+// 		res << "]";
+// 	}
+// 	return res.str();
+// }
 
 
 double STModelParameters::optimal_acceptance_rate() const
@@ -238,8 +291,9 @@ bool STModelParameters::adapted() const
 
 bool STModelParameters::adapted(STM::ParName par) const
 {
-	if(parSettings.at(par).acceptanceRate < targetAcceptanceInterval[0] or 
-			parSettings.at(par).acceptanceRate > targetAcceptanceInterval[1])
+	if(not parSettings.at(par).isConstant and 
+			(parSettings.at(par).acceptanceRate < targetAcceptanceInterval[0] or 
+			parSettings.at(par).acceptanceRate > targetAcceptanceInterval[1]))
 		return false;
 	else return true;
 }
