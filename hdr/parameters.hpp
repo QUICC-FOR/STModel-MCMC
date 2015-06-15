@@ -110,8 +110,9 @@ class STModelParameters
 	int adaptation_status(const STM::ParName & par) const;
 	bool adapted() const;
 	bool adapted(STM::ParName par) const;
-	std::string str_acceptance_rates(bool inColor = false) const;
-	std::string str_sampling_variance(bool inColor = false) const;
+	void print_adaptation(bool inColor = false, int ncol=1) const;
+//	std::string str_acceptance_rates(bool inColor = false) const;
+//	std::string str_sampling_variance(bool inColor = false) const;
 
 	/*
 		Utility functions
