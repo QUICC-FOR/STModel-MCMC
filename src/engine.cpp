@@ -270,10 +270,11 @@ void Metropolis::auto_adapt()
 		}
 		
 		if(outputLevel >= EngineOutputLevel::Talkative) {
-			std::cerr << "\n    " << timestamp() << " iter " << parameters.iteration() << ", acceptance rates:\n";
-			std::cerr << "    " << parameters.str_acceptance_rates(isatty(fileno(stderr))) << "\n";
-			std::cerr << "    sampler variance:\n";
-			std::cerr << "    " << parameters.str_sampling_variance(isatty(fileno(stderr))) << std::endl;
+			std::cerr << "\n    " << timestamp() << " iter " << parameters.iteration() << "\n";
+			parameters.print_adaptation(isatty(fileno(stderr)), 2);
+// 			std::cerr << "    " << parameters.str_acceptance_rates(isatty(fileno(stderr))) << "\n";
+// 			std::cerr << "    sampler variance:\n";
+// 			std::cerr << "    " << parameters.str_sampling_variance(isatty(fileno(stderr))) << std::endl;
 		}
 		currentSamples.clear();
 		if(saveResumeData)
