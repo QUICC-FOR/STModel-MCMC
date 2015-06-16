@@ -226,11 +226,6 @@ void Metropolis::regression_adapt(int numSteps, int stepSize)
 					&cov00, &cov01, &cov11, &sumsq);
 			targetVariance = std::exp((parameters.optimal_acceptance_rate() - beta0)/beta1);
 		}
-		// put some reasonable caps on the starting variance to avoid nonsense answers
-		// resulting from linear extrapolation
-		if(targetVariance <= 0) targetVariance = 0.05;
-		if(targetVariance >= 1e4) targetVariance = 1e4;
-		
 		parameters.set_sampler_variance(par, targetVariance);
 
 		delete [] regressionData[par]["log_variance"];
