@@ -39,7 +39,8 @@ std::vector<STM::ParName> STModelParameters::activeParNames;
 std::map<STM::ParName, ParameterSettings> STModelParameters::parSettings;
 double STModelParameters::optimalAcceptanceRate = 0.234;
 std::vector<double> STModelParameters::targetAcceptanceInterval = {0.15, 0.5};
-
+const double STModelParameters::varianceMax = 1e3;
+const double STModelParameters::varianceMin = 1e-3;
 
 
 
@@ -178,7 +179,6 @@ void STModelParameters::print_adaptation(bool inColor, int ncol) const
 		// color stuff
 		if(inColor)
 		{
-//			std::cerr << "[ ";
 			if(not adapted(par))
 				std::cerr << red;
 			else 
@@ -200,65 +200,6 @@ void STModelParameters::print_adaptation(bool inColor, int ncol) const
 	}
 	std::cerr << "\n";
 }
-
-// std::string STModelParameters::str_acceptance_rates(bool inColor) const
-// {
-// 	std::stringstream res;
-// 	res << std::fixed;
-// 	res.precision(3);
-// 
-// 	std::string red = "\033[1;31m";
-// 	std::string cyan = "\033[1;36m";
-// 	std::string normal = "\033[0m";
-// 
-// 	if(inColor)
-// 		res << "[ ";
-// 	for(const auto ps: parSettings) {
-// 		if(inColor)
-// 		{
-// 			if(not adapted(ps.first))
-// 				res << red;
-// 			else
-// 				res << cyan;
-// 		}
-// 		res << ps.second.acceptanceRate << " ";
-// 	}
-// 	if(inColor)
-// 	{
-// 		res << normal;
-// 		res << "]";
-// 	}
-// 	return res.str();
-// }
-// 
-// 
-// std::string STModelParameters::str_sampling_variance(bool inColor) const
-// {
-// 	std::string red = "\033[1;31m";
-// 	std::string cyan = "\033[1;36m";
-// 	std::string normal = "\033[0m";
-// 	std::stringstream res;
-// 	res << std::fixed;
-// 	res.precision(3);
-// 	if(inColor)
-// 		res << "[ ";
-// 	for(const auto ps: parSettings) {
-// 		if(inColor)
-// 		{
-// 			if(not adapted(ps.first))
-// 				res << red;
-// 			else
-// 				res << cyan;
-// 		}
-// 		res << ps.second.variance << " ";
-// 	}
-// 	if(inColor)
-// 	{
-// 		res << normal;
-// 		res << "]";
-// 	}
-// 	return res.str();
-// }
 
 
 double STModelParameters::optimal_acceptance_rate() const
@@ -316,7 +257,11 @@ double STModelParameters::sampler_variance(const STM::ParName & par) const
 
 
 void STModelParameters::set_sampler_variance(const STM::ParName & par, double val)
-{ parSettings.at(par).variance = val; }
+{
+	if(val > STModelParameters::varianceMax) val = STModelParameters::varianceMax;
+	if(val < STModelParameters::varianceMin) val = STModelParameters::varianceMin;
+	parSettings.at(par).variance = val;
+}
 
 
 void STModelParameters::increment(int n)

@@ -76,6 +76,9 @@ class STModelParameters
 		
 		set_sampler_variance(std::string par, double val)
 		sets the variance of parameter par to the value val
+		this function does bounds checking but DOES NOT raise exceptions; an attempt
+		to set variance to a value outside the bounds (1e-3, 1e3) will result in the variance
+		being set to the corresponding limit
 	*/
 	double sampler_variance(const STM::ParName & par) const;
 	void set_sampler_variance(const STM::ParName & par, double val);
@@ -100,8 +103,7 @@ class STModelParameters
 		adapted()
 		returns true if all parameters are adapted
 		
-		str_acceptance_rates: output acceptance rates as a formatted string for logging
-		std_sampling_variance: same as above, but for the sampling variance
+		print_adaptation: print a columnar display of adaptation rates and variance
 	*/
 	void set_acceptance_rates(const std::map<STM::ParName, double> & rates);
 	void set_acceptance_rate(const STM::ParName & par, double rate);
@@ -111,8 +113,6 @@ class STModelParameters
 	bool adapted() const;
 	bool adapted(STM::ParName par) const;
 	void print_adaptation(bool inColor = false, int ncol=1) const;
-//	std::string str_acceptance_rates(bool inColor = false) const;
-//	std::string str_sampling_variance(bool inColor = false) const;
 
 	/*
 		Utility functions
@@ -143,6 +143,8 @@ class STModelParameters
 	static std::map<STM::ParName, ParameterSettings> parSettings;
 	static std::vector<double> targetAcceptanceInterval;
 	static double optimalAcceptanceRate;
+	const static double varianceMax;
+	const static double varianceMin;
 
 	// the data below is owned by each individual object
 	double iterationCount;
