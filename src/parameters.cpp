@@ -39,7 +39,8 @@ std::vector<STM::ParName> STModelParameters::activeParNames;
 std::map<STM::ParName, ParameterSettings> STModelParameters::parSettings;
 double STModelParameters::optimalAcceptanceRate = 0.234;
 std::vector<double> STModelParameters::targetAcceptanceInterval = {0.15, 0.5};
-
+const double STModelParameters::varianceMax = 1e3;
+const double STModelParameters::varianceMin = 1e-3;
 
 
 
@@ -256,7 +257,11 @@ double STModelParameters::sampler_variance(const STM::ParName & par) const
 
 
 void STModelParameters::set_sampler_variance(const STM::ParName & par, double val)
-{ parSettings.at(par).variance = val; }
+{
+	if(val > STModelParameters::varianceMax) val = STModelParameters::varianceMax;
+	if(val < STModelParameters::varianceMin) val = STModelParameters::varianceMin;
+	parSettings.at(par).variance = val;
+}
 
 
 void STModelParameters::increment(int n)

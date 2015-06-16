@@ -76,6 +76,9 @@ class STModelParameters
 		
 		set_sampler_variance(std::string par, double val)
 		sets the variance of parameter par to the value val
+		this function does bounds checking but DOES NOT raise exceptions; an attempt
+		to set variance to a value outside the bounds (1e-3, 1e3) will result in the variance
+		being set to the corresponding limit
 	*/
 	double sampler_variance(const STM::ParName & par) const;
 	void set_sampler_variance(const STM::ParName & par, double val);
@@ -140,6 +143,8 @@ class STModelParameters
 	static std::map<STM::ParName, ParameterSettings> parSettings;
 	static std::vector<double> targetAcceptanceInterval;
 	static double optimalAcceptanceRate;
+	const static double varianceMax;
+	const static double varianceMin;
 
 	// the data below is owned by each individual object
 	double iterationCount;
