@@ -372,7 +372,8 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 		//		if desired, some debugging output
 		if(outputLevel >= EngineOutputLevel::Verbose) {
 			std::cerr << "  iteration " << parameters.iteration() - 1 << 
-					"    posterior probability: " << currentPosteriorProb << "\n";
+					"    posterior probability: " << currentPosteriorProb <<
+					"    likelihood: " << currentLL << "\n";
 			if(outputLevel >= EngineOutputLevel::ExtraVerbose) {
 			std::ios_base::fmtflags oldflags = std::cerr.flags();
 				std::streamsize oldprecision = std::cerr.precision();
@@ -419,7 +420,7 @@ int Metropolis::select_parameter(const STM::ParPair & p)
 	
 	double proposalLogPosterior = log_posterior_prob(proposalLL, p);
 	double currentLogPosterior = log_posterior_prob(currentLL, parameters.at(p.first));
-	double acceptanceProb = exp(proposalLogPosterior - currentPosteriorProb);
+	double acceptanceProb = exp(proposalLogPosterior - currentLogPosterior);
 
 	// 	check for nan -- right now this is not being handled, but it should be
 	if(std::isnan(acceptanceProb))
