@@ -65,6 +65,9 @@ outputBufferSize(500)
 	else
 		saveResumeData = true;
 		
+	// compute the log likelihood for the initial conditions
+	currentLL = likelihood->compute_log_likelihood(parameters);
+		
 	if(saveResumeData) serialize_all();
 }
 
@@ -92,6 +95,7 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 		throw std::runtime_error("Metropolis: passed null pointer on construction");
 
 	currentPosteriorProb = STMInput::str_convert<double>(esd.at("currentPosteriorProb")[0]);
+	currentLL = STMInput::str_convert<double>(esd.at("currentLL")[0]);
 	outputBufferSize = STMInput::str_convert<int>(esd.at("outputBufferSize")[0]);
 	thinSize = STMInput::str_convert<int>(esd.at("thinSize")[0]);
 	burnin = STMInput::str_convert<int>(esd.at("burnin")[0]);
@@ -332,6 +336,7 @@ std::string Metropolis::serialize(char sep) const
 	result << "rngSeed" << sep << rngSeed << "\n";
 	result << "outputLevel" << sep << int(outputLevel) << "\n";
 	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
+	result << "currentLL" << sep << currentLL << "\n";
 	
 	return result.str();
 }
@@ -410,10 +415,11 @@ int Metropolis::select_parameter(const STM::ParPair & p)
 {
 	STMParameters::STModelParameters proposal (parameters);
 	proposal.update(p);
+	double proposalLL = likelihood->compute_log_likelihood(proposal);
 	
-	double proposalLogPosterior = log_posterior_prob(proposal, p);
-	double previousLogPosterior = log_posterior_prob(parameters, parameters.at(p.first));
-	double acceptanceProb = exp(proposalLogPosterior - previousLogPosterior);
+	double proposalLogPosterior = log_posterior_prob(proposalLL, p);
+	double currentLogPosterior = log_posterior_prob(currentLL, parameters.at(p.first));
+	double acceptanceProb = exp(proposalLogPosterior - currentPosteriorProb);
 
 	// 	check for nan -- right now this is not being handled, but it should be
 	if(std::isnan(acceptanceProb))
@@ -422,19 +428,17 @@ int Metropolis::select_parameter(const STM::ParPair & p)
 	double testVal = gsl_rng_uniform(rng.get());
 	if(testVal < acceptanceProb) {
 		currentPosteriorProb = proposalLogPosterior;
+		currentLL = proposalLL;
 		parameters.update(p);
 		return 1;
 	} else {
-		currentPosteriorProb = previousLogPosterior;
 		return 0;
 	}
 }
 
 
-double Metropolis::log_posterior_prob(const STMParameters::STModelParameters & par, 
-		const STM::ParPair & pair) const
-{ return likelihood->compute_log_likelihood(par) + likelihood->log_prior(pair); }
-
+double Metropolis::log_posterior_prob(const double logl, const STM::ParPair & pair) const
+{ return logl + likelihood->log_prior(pair); }
 
 void Metropolis::set_up_rng()
 {
