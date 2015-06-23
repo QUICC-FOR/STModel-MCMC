@@ -65,6 +65,7 @@ STModelParameters::STModelParameters(const std::vector<ParameterSettings> & init
 STModelParameters::STModelParameters(STMInput::SerializationData & sd)
 {
 	STModelParameters::parNames = sd.at("parNames");
+	STModelParameters::activeParNames = sd.at("activeParNames");
 	std::vector<STM::ParValue> inits = STMInput::str_convert<STM::ParValue>(sd.at("initialVals"));
 	std::vector<bool> isConstant = STMInput::str_convert<bool>(sd.at("isConstant"));
 	std::vector<double> var = STMInput::str_convert<double>(sd.at("samplerVariance"));
@@ -93,6 +94,10 @@ std::string STModelParameters::serialize(char s) const
 	for(const auto & v : pNames) result << s << v;
 	result << "\n";
 	
+	result << "activeParNames";
+	for(const auto & v : active_names()) result << s << v;
+	result << "\n";
+
 	STM::ParMap initialVals, pVariance, pAcceptance;
 	std::map<STM::ParName, bool> pIsConstant;
 	for(const auto & pn : pNames)
