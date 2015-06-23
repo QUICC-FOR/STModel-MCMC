@@ -132,6 +132,7 @@ class STModelParameters
 	size_t size() const;
 	const std::vector<STM::ParName> & names() const;
 	const std::vector<STM::ParName> & active_names() const;
+	void reset_active_pars() const;
 	void reset();
 	void increment(int n = 1);
 	int iteration() const;

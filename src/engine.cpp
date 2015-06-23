@@ -82,7 +82,12 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	STMInput::SerializationData esd = sd.at("Metropolis");
 	// check versions and return error if no match
 	std::string saveVersion = esd.at("version")[0];
-	if(saveVersion != engineVersion)
+	bool upgrade = false;
+	if(saveVersion == "Metropolis1.1" and engineVersion == "Metropolis1.2")
+	{
+		upgrade = true;
+	}
+	else if(saveVersion != engineVersion)
 	{
 		std::ostringstream msg;
 		msg << "Error, serialized input version = '" << saveVersion;
@@ -105,6 +110,10 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	rngSeed = STMInput::str_convert<int>(esd.at("rngSeed")[0]);
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
+	if(upgrade)
+	{
+		currentLL = likelihood->compute_log_likelihood(parameters);
+	}
 
 }
 

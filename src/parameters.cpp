@@ -49,6 +49,13 @@ const double STModelParameters::varianceMin = 1e-3;
 */
 STModelParameters::STModelParameters(const std::vector<ParameterSettings> & initPars)
 {
+	set_up_par_settings(initPars);
+	reset();
+}
+
+
+void STModelParameters::set_up_par_settings(const std::vector<ParameterSettings> & initPars)
+{
 	for(const ParameterSettings & par : initPars) {
 		if(parSettings.count(par.name) == 0)
 			parSettings[par.name] = par;
@@ -58,25 +65,30 @@ STModelParameters::STModelParameters(const std::vector<ParameterSettings> & init
 			if(not par.isConstant) activeParNames.push_back(par.name);
 		}
 	}
-	reset();
 }
 
 
 STModelParameters::STModelParameters(STMInput::SerializationData & sd)
 {
-	STModelParameters::parNames = sd.at("parNames");
-	STModelParameters::activeParNames = sd.at("activeParNames");
+	std::vector<STM::ParName> names = sd.at("parNames");
 	std::vector<STM::ParValue> inits = STMInput::str_convert<STM::ParValue>(sd.at("initialVals"));
 	std::vector<bool> isConstant = STMInput::str_convert<bool>(sd.at("isConstant"));
 	std::vector<double> var = STMInput::str_convert<double>(sd.at("samplerVariance"));
 	std::vector<double> accept = STMInput::str_convert<double>(sd.at("acceptanceRates"));
 	std::vector<STM::ParValue> vals = STMInput::str_convert<STM::ParValue>(sd.at("parameterValues"));
-	for(int i = 0; i < parNames.size(); i++)
+	
+	// check that all lengths are equal
+	if(not (names.size() == inits.size() == isConstant.size() == var.size() == accept.size() == vals.size()))
+		throw std::runtime_error("Error reading parameter data: vector sizes must be equal");
+	
+	for(int i = 0; i < names.size(); i++)
 	{
-		parSettings[parNames[i]] = ParameterSettings (parNames[i], inits[i], isConstant[i], 
-			var[i], accept[i]);
-		parameterValues[parNames[i]] = vals[i];
+		std::vector<ParameterSettings> newPars;
+		ParameterSettings ps (names[i], inits[i], isConstant[i], var[i], accept[i]);
+		newPars.push_back(ps);
+		parameterValues[names[i]] = vals[i];
 	}
+	set_up_par_settings(newPars);
 	
 	STModelParameters::targetAcceptanceInterval = STMInput::str_convert<double>(sd.at("targetAcceptanceInterval"));
 	iterationCount = STMInput::str_convert<double>(sd.at("iterationCount")[0]);
@@ -94,10 +106,6 @@ std::string STModelParameters::serialize(char s) const
 	for(const auto & v : pNames) result << s << v;
 	result << "\n";
 	
-	result << "activeParNames";
-	for(const auto & v : active_names()) result << s << v;
-	result << "\n";
-
 	STM::ParMap initialVals, pVariance, pAcceptance;
 	std::map<STM::ParName, bool> pIsConstant;
 	for(const auto & pn : pNames)
