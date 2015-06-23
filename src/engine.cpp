@@ -100,7 +100,6 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 		throw std::runtime_error("Metropolis: passed null pointer on construction");
 
 	currentPosteriorProb = STMInput::str_convert<double>(esd.at("currentPosteriorProb")[0]);
-	currentLL = STMInput::str_convert<double>(esd.at("currentLL")[0]);
 	outputBufferSize = STMInput::str_convert<int>(esd.at("outputBufferSize")[0]);
 	thinSize = STMInput::str_convert<int>(esd.at("thinSize")[0]);
 	burnin = STMInput::str_convert<int>(esd.at("burnin")[0]);
@@ -111,9 +110,9 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
 	if(upgrade)
-	{
 		currentLL = likelihood->compute_log_likelihood(parameters);
-	}
+	else
+		currentLL = STMInput::str_convert<double>(esd.at("currentLL")[0]);
 
 }
 

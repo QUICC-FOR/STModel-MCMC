@@ -78,8 +78,12 @@ STModelParameters::STModelParameters(STMInput::SerializationData & sd)
 	std::vector<STM::ParValue> vals = STMInput::str_convert<STM::ParValue>(sd.at("parameterValues"));
 	
 	// check that all lengths are equal
-	if(not (names.size() == inits.size() == isConstant.size() == var.size() == accept.size() == vals.size()))
+	if(not (names.size() == inits.size() and names.size() == isConstant.size() and 
+			names.size() == var.size() and names.size() == accept.size() and 
+			names.size() == vals.size()))
+	{
 		throw std::runtime_error("Error reading parameter data: vector sizes must be equal");
+	}
 	
 	std::vector<ParameterSettings> newPars;
 	for(int i = 0; i < names.size(); i++)
