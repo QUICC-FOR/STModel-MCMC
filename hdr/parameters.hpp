@@ -137,6 +137,8 @@ class STModelParameters
 	int iteration() const;
 		
 	private:	
+	void set_up_par_settings(const std::vector<ParameterSettings> & initPars);
+
 	// static variables; these are shared among ALL parameter objects
 	static std::vector<STM::ParName> parNames;
 	static std::vector<STM::ParName> activeParNames;

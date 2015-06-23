@@ -51,8 +51,7 @@ class Metropolis
 	STM::ParPair propose_parameter(const 
 			STM::ParName & par) const;
 	int select_parameter(const STM::ParPair & p);
-	double log_posterior_prob(const STMParameters::STModelParameters & par, 
-			const STM::ParPair & pair) const;
+	double log_posterior_prob(const double logl, const STM::ParPair & pair) const;
 	void set_up_rng();
 	void serialize_all() const;
 	std::string serialize(char sep) const;
@@ -70,6 +69,7 @@ class Metropolis
 	STMParameters::STModelParameters parameters;
 	std::shared_ptr<gsl_rng> rng;
 	double currentPosteriorProb;
+	double currentLL;
 
 	// settings
 	int outputBufferSize;
