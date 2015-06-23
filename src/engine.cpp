@@ -27,7 +27,7 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis1.1";
+	std::string engineVersion = "Metropolis1.2";
 }
 
 namespace STMEngine {
@@ -65,6 +65,9 @@ outputBufferSize(500)
 	else
 		saveResumeData = true;
 		
+	// compute the log likelihood for the initial conditions
+	currentLL = likelihood->compute_log_likelihood(parameters);
+		
 	if(saveResumeData) serialize_all();
 }
 
@@ -79,7 +82,12 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	STMInput::SerializationData esd = sd.at("Metropolis");
 	// check versions and return error if no match
 	std::string saveVersion = esd.at("version")[0];
-	if(saveVersion != engineVersion)
+	bool upgrade = false;
+	if(saveVersion == "Metropolis1.1" and engineVersion == "Metropolis1.2")
+	{
+		upgrade = true;
+	}
+	else if(saveVersion != engineVersion)
 	{
 		std::ostringstream msg;
 		msg << "Error, serialized input version = '" << saveVersion;
@@ -101,6 +109,10 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	rngSeed = STMInput::str_convert<int>(esd.at("rngSeed")[0]);
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
+	if(upgrade)
+		currentLL = likelihood->compute_log_likelihood(parameters);
+	else
+		currentLL = STMInput::str_convert<double>(esd.at("currentLL")[0]);
 
 }
 
@@ -332,6 +344,7 @@ std::string Metropolis::serialize(char sep) const
 	result << "rngSeed" << sep << rngSeed << "\n";
 	result << "outputLevel" << sep << int(outputLevel) << "\n";
 	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
+	result << "currentLL" << sep << currentLL << "\n";
 	
 	return result.str();
 }
@@ -367,7 +380,8 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 		//		if desired, some debugging output
 		if(outputLevel >= EngineOutputLevel::Verbose) {
 			std::cerr << "  iteration " << parameters.iteration() - 1 << 
-					"    posterior probability: " << currentPosteriorProb << "\n";
+					"    posterior probability: " << currentPosteriorProb <<
+					"    likelihood: " << currentLL << "\n";
 			if(outputLevel >= EngineOutputLevel::ExtraVerbose) {
 			std::ios_base::fmtflags oldflags = std::cerr.flags();
 				std::streamsize oldprecision = std::cerr.precision();
@@ -410,10 +424,11 @@ int Metropolis::select_parameter(const STM::ParPair & p)
 {
 	STMParameters::STModelParameters proposal (parameters);
 	proposal.update(p);
+	double proposalLL = likelihood->compute_log_likelihood(proposal);
 	
-	double proposalLogPosterior = log_posterior_prob(proposal, p);
-	double previousLogPosterior = log_posterior_prob(parameters, parameters.at(p.first));
-	double acceptanceProb = exp(proposalLogPosterior - previousLogPosterior);
+	double proposalLogPosterior = log_posterior_prob(proposalLL, p);
+	double currentLogPosterior = log_posterior_prob(currentLL, parameters.at(p.first));
+	double acceptanceProb = exp(proposalLogPosterior - currentLogPosterior);
 
 	// 	check for nan -- right now this is not being handled, but it should be
 	if(std::isnan(acceptanceProb))
@@ -422,19 +437,17 @@ int Metropolis::select_parameter(const STM::ParPair & p)
 	double testVal = gsl_rng_uniform(rng.get());
 	if(testVal < acceptanceProb) {
 		currentPosteriorProb = proposalLogPosterior;
+		currentLL = proposalLL;
 		parameters.update(p);
 		return 1;
 	} else {
-		currentPosteriorProb = previousLogPosterior;
 		return 0;
 	}
 }
 
 
-double Metropolis::log_posterior_prob(const STMParameters::STModelParameters & par, 
-		const STM::ParPair & pair) const
-{ return likelihood->compute_log_likelihood(par) + likelihood->log_prior(pair); }
-
+double Metropolis::log_posterior_prob(const double logl, const STM::ParPair & pair) const
+{ return logl + likelihood->log_prior(pair); }
 
 void Metropolis::set_up_rng()
 {
