@@ -132,12 +132,13 @@ class STModelParameters
 	size_t size() const;
 	const std::vector<STM::ParName> & names() const;
 	const std::vector<STM::ParName> & active_names() const;
-	void reset_active_pars() const;
 	void reset();
 	void increment(int n = 1);
 	int iteration() const;
 		
 	private:	
+	void set_up_par_settings(const std::vector<ParameterSettings> & initPars);
+
 	// static variables; these are shared among ALL parameter objects
 	static std::vector<STM::ParName> parNames;
 	static std::vector<STM::ParName> activeParNames;

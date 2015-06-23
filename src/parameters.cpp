@@ -81,9 +81,9 @@ STModelParameters::STModelParameters(STMInput::SerializationData & sd)
 	if(not (names.size() == inits.size() == isConstant.size() == var.size() == accept.size() == vals.size()))
 		throw std::runtime_error("Error reading parameter data: vector sizes must be equal");
 	
+	std::vector<ParameterSettings> newPars;
 	for(int i = 0; i < names.size(); i++)
 	{
-		std::vector<ParameterSettings> newPars;
 		ParameterSettings ps (names[i], inits[i], isConstant[i], var[i], accept[i]);
 		newPars.push_back(ps);
 		parameterValues[names[i]] = vals[i];
