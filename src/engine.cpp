@@ -106,7 +106,7 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	adaptationSampleSize = STMInput::str_convert<int>(esd.at("adaptationSampleSize")[0]);
 	adaptationSampleSize = STMInput::str_convert<int>(esd.at("minAdaptationLoops")[0]);
 	adaptationSampleSize = STMInput::str_convert<int>(esd.at("maxAdaptationLoops")[0]);
-	rngSeed = STMInput::str_convert<int>(esd.at("rngSeed")[0]);
+	rngSeed = STMInput::str_convert<unsigned long int>(esd.at("rngSeed")[0]);
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
 	if(upgrade)
