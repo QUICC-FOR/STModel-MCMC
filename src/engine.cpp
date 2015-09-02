@@ -27,7 +27,7 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis1.2";
+	std::string engineVersion = "Metropolis1.3";
 }
 
 namespace STMEngine {

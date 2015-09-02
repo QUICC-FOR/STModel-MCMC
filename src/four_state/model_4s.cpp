@@ -14,6 +14,19 @@ namespace STM
 namespace STMModel
 {
 
+// static variable and function definition
+STM::PrevalenceModelTypes STMTransition::prevalenceModel = STM::PrevalenceModelTypes::Empirical;
+void STMTransition::set_prevalence_model(const STM::PrevalenceModelTypes &pr)
+{
+	// PrevalenceModelTypes::STM is not implemented in the 4-state model so we set it
+	// to empirical prevalence in that case
+	if(pr == STM::PrevalenceModelTypes::STM)
+		STMTransition::prevalenceModel = STM::PrevalenceModelTypes::Empirical;
+	else
+		STMTransition::prevalenceModel = pr;
+}
+
+
 std::vector<char> State::state_names()
 {
 	std::vector<char> result = {'T','B', 'M', 'R'};
@@ -145,6 +158,13 @@ STM::ParMap STMTransition::generate_transform_rates(const STM::ParMap & p) const
 			p.at("e6")*pow(env2,3);
 	
 	return transformLogitParams;
+}
+
+
+void STMTransition::compute_stm_prevalence(const STM::ParMap &rates)
+{
+	// stm prevalence is not implemented in the 4-state model as it is not solvable
+	return;
 }
 
 }

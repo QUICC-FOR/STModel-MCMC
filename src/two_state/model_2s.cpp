@@ -35,6 +35,13 @@ namespace STM
 namespace STMModel
 {
 
+// static variable and function definition
+STM::PrevalenceModelTypes STMTransition::prevalenceModel = STM::PrevalenceModelTypes::Empirical;
+void STMTransition::set_prevalence_model(const STM::PrevalenceModelTypes &pr)
+{ STMTransition::prevalenceModel = pr; }
+
+
+
 std::vector<char> State::state_names()
 {
 	std::vector<char> result = {'0','1'};
@@ -45,7 +52,7 @@ std::vector<char> State::state_names()
 std::map<STM::StateTypes, std::map<STM::StateTypes, TransProbFunction> > STMTransition::transitionFunctions;
 
 /*
-	This function encodes the four state model
+	This function encodes the two state model
 	It stores function generators in the transitionFunctions object
 	This object is a 2-D map, so that transitionFunctions[STM::StateTypes::A][STM::StateTypes::B]
 	contains a function generator
@@ -54,7 +61,7 @@ std::map<STM::StateTypes, std::map<STM::StateTypes, TransProbFunction> > STMTran
 	transition object, it returns a function taking a parameter set p as a parameter
 	
 	this function returns the transition probability from STM::StateTypes::A to STM::StateTypes::B
-	given the parameters and the prevalence
+	given the parameters (p) and the prevalence (e)
 */
 void STMTransition::setup_transition_functions()
 {
@@ -104,7 +111,13 @@ STM::ParMap STMTransition::generate_transform_rates(const STM::ParMap & p) const
 }
 
 
-
+void STMTransition::compute_stm_prevalence(const STM::ParMap &rates)
+{
+	STM::ParValue prev = 1.0 - (rates.at("epsilon") / rates.at("gamma"));
+	if(prev < 0) prev = 0;
+	expected[STM::StateTypes::Present] = prev;
+	expected[STM::StateTypes::Absent] = 1.0 - prev;
+}
 
 
 

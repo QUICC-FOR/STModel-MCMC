@@ -63,6 +63,13 @@ Likelihood::Likelihood(STMInput::SerializationData sd, const std::vector<std::st
 	std::vector<int> prFam = STMInput::str_convert<int>(sd.at("priorFamily"));
 	targetInterval = STMInput::str_convert<unsigned int>(sd.at("targetInterval")[0]);
 
+	STMModel::STMTransition::set_prevalence_model(STM::PrevalenceModelTypes(STMInput::str_convert<int>(sd.at("prevalenceModel")[0])));
+	if(STMModel::STMTransition::get_prevalence_model() != STM::PrevalenceModelTypes::Empirical)
+	{
+		for(auto tr : transitions)
+			tr.set_global_prevalence();
+	}
+
 	for(int i = 0; i < parNames.size(); i++)
 	{
 		priors[parNames[i]] = PriorDist (prMean.at(i), prSD.at(i), 
@@ -95,6 +102,7 @@ std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parN
 	result << "transitionFileName" << s << transitionFileName << "\n";
 	result << "likelihoodThreads" << s << likelihoodThreads << "\n";
 	result << "targetInterval" << s << targetInterval << "\n";
+	result << "prevalenceModel" << s << int(STMModel::STMTransition::get_prevalence_model()) << "\n";
 
 	STM::ParMap prMean, prSD;
 	std::map<std::string, PriorFamilies> prFam;

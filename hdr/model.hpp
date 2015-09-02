@@ -75,6 +75,9 @@ class STMTransition
 			std::map<char, double> prevalence, int interval);
 
 	STM::ParValue transition_prob(const STM::ParMap & p, int targetInterval);
+	void set_global_prevalence();
+	static STM::PrevalenceModelTypes get_prevalence_model()	{ return prevalenceModel; }
+	static void set_prevalence_model(const STM::PrevalenceModelTypes &pr);
 
 	private:
 	static void setup_transition_functions();
@@ -82,6 +85,7 @@ class STMTransition
 	STM::ParMap generate_transform_rates(const STM::ParMap & p) const;
 	STM::ParMap generate_interval_rates(const STM::ParMap & p, int targetInterval) const;
 	void invalid_transition();
+	void compute_stm_prevalence(const STM::ParMap &rates);
 
 	static std::map<STM::StateTypes, std::map<STM::StateTypes, TransProbFunction> > transitionFunctions;
 	State initial, final;
@@ -89,6 +93,7 @@ class STMTransition
 	STM::StateMap expected;
 	int interval;
 	TransProbFunction transProb;
+	static STM::PrevalenceModelTypes prevalenceModel;
 };
 
 
@@ -131,6 +136,8 @@ inline void STMTransition::invalid_transition()
 inline STM::ParValue STMTransition::transition_prob(const STM::ParMap & p, int targetInterval)
 { 
 	STM::ParMap rates = generate_interval_rates(p, targetInterval);
+	if(STMTransition::prevalenceModel == STM::PrevalenceModelTypes::STM)
+		compute_stm_prevalence(rates);
 	return transProb(rates, expected); 
 }
 
@@ -143,7 +150,16 @@ inline STMTransition::STMTransition(char state1, char state2, double env1, doubl
 		setup_transition_functions();
 	for(const auto & pr : prevalence)
 		expected[State(pr.first).get()] = pr.second;
+	if(prevalenceModel == STM::PrevalenceModelTypes::Global)
+		set_global_prevalence();
 	generate_transition_function(); 
+}
+
+
+inline void STMTransition::set_global_prevalence()
+{
+	for(auto & exp : expected)
+		expected[exp.first] = 1.0;
 }
 
 
