@@ -30,7 +30,7 @@
 # data & results
 run*
 initForFit*
-complete/*
+complete_results/*
 
 src/ref*
 bin/*
