@@ -25,13 +25,15 @@ struct ModelSettings
 	int maxIterations;
 	bool resume;
 	const char * resumeFile;
+	STM::PrevalenceModelTypes prevMethod;
 	
 	STMEngine::EngineOutputLevel verbose;
 	
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
 			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
 			burnin(0), targetInterval(1), numThreads(8), outDir("."), resume(false),
-			outMethod(STMOutput::OutputMethodType::CSV), resumeFile("") {}
+			outMethod(STMOutput::OutputMethodType::CSV), resumeFile(""),
+			prevMethod(STM::PrevalenceModelTypes::Empirical) {}
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -143,7 +145,7 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hsr:p:t:o:n:i:b:l:c:v:")) != -1)
+	while((thearg = getopt(argc, argv, "hsagr:p:t:o:n:i:b:l:c:v:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -152,6 +154,14 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 				break;
 			case 's':
 				s.outMethod = STMOutput::OutputMethodType::STDOUT;
+				break;
+			case 'a':
+				s.prevMethod = STM::PrevalenceModelTypes::STM;
+				STMModel::STMTransition::set_prevalence_model(STM::PrevalenceModelTypes::STM);
+				break;
+			case 'g':
+				s.prevMethod = STM::PrevalenceModelTypes::Global;
+				STMModel::STMTransition::set_prevalence_model(STM::PrevalenceModelTypes::Global);
 				break;
 			case 'r':
 				s.resume = true;
@@ -196,6 +206,8 @@ void print_help()
 	std::cerr << "Command line options:\n";
 	std::cerr << "    -h:             display this help\n";
 	std::cerr << "    -s:             output to standard out (default is CSV files)\n";
+	std::cerr << "    -a:             Instead of the empirical prevalence (default), use the analytical solution\n";
+	std::cerr << "    -g:             Instead of the empirical prevalence (default), use global (i.e., no) prevalence\n";
 	std::cerr << "    -r <filname>:   resume the sampler from the file indicated\n";
 	std::cerr << "                         note that the transitionData are not saved with the resume data\n";		
 	std::cerr << "                         so reloading it with the -t option is required\n";		
