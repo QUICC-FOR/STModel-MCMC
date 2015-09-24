@@ -66,6 +66,7 @@ outputBufferSize(500)
 		saveResumeData = true;
 		
 	// compute the log likelihood for the initial conditions
+	
 	currentLL = likelihood->compute_log_likelihood(parameters);
 		
 	if(saveResumeData) serialize_all();
@@ -82,12 +83,7 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	STMInput::SerializationData esd = sd.at("Metropolis");
 	// check versions and return error if no match
 	std::string saveVersion = esd.at("version")[0];
-	bool upgrade = false;
-	if(saveVersion == "Metropolis1.1" and engineVersion == "Metropolis1.2")
-	{
-		upgrade = true;
-	}
-	else if(saveVersion != engineVersion)
+	if(saveVersion != engineVersion)
 	{
 		std::ostringstream msg;
 		msg << "Error, serialized input version = '" << saveVersion;
@@ -109,10 +105,7 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	rngSeed = STMInput::str_convert<unsigned long int>(esd.at("rngSeed")[0]);
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
-	if(upgrade)
-		currentLL = likelihood->compute_log_likelihood(parameters);
-	else
-		currentLL = STMInput::str_convert<double>(esd.at("currentLL")[0]);
+	currentLL = STMInput::str_convert<double>(esd.at("currentLL")[0]);
 
 }
 
@@ -130,6 +123,8 @@ void Metropolis::run_sampler(int n)
 
 	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
+	// for safety, always start by re-computing the current likelihood
+	currentLL = likelihood->compute_log_likelihood(parameters);
 	while(numCompleted < n) {
 		int sampleSize;
 		if(burninCompleted < burnin)
