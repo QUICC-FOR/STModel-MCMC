@@ -1,0 +1,48 @@
+Metropolis 
+{
+version Metropolis1.3
+outputBufferSize 500
+thinSize 1
+burnin 0
+adaptationSampleSize 500
+minAdaptationLoops 5
+maxAdaptationLoops 25
+rngSetSeed 0
+rngSeed 1661861853
+outputLevel 2
+currentPosteriorProb -14405.3
+currentLL -14403.3
+}
+
+Likelihood 
+{
+transitionFileName dat/mcmc_data.txt
+likelihoodThreads 40
+targetInterval 5
+prevalenceModel 0
+priorMeans 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+priorSD 10 2.5 2.5 2.5 2.5 2.5 2.5 10 2.5 2.5 2.5 2.5 2.5 2.5
+priorFamily 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+}
+
+Parameters 
+{
+parNames g0 g1 g2 g3 g4 g5 g6 e0 e1 e2 e3 e4 e5 e6
+initialVals 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+samplerVariance 0.112671 0.100517 0.117899 0.0862874 0.001 0.001 0.001 0.0930206 0.105409 0.121425 0.0873153 0.001 0.001 0.001
+acceptanceRates 0.446 0.418 0.462 0.392 0 0 0 0.392 0.444 0.45 0.406 0 0 0
+isConstant 0 0 0 0 1 1 1 0 0 0 0 1 1 1
+targetAcceptanceInterval 0.15 0.5
+optimalAcceptanceRate 0.234
+iterationCount 20000
+parameterValues 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+}
+
+OutputOptions 
+{
+filename STMOutput
+posteriorStarted 1
+dirname res/mcmc1/
+outputMethod 0
+}
+
