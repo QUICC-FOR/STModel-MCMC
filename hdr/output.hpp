@@ -47,6 +47,7 @@ namespace STMOutput {
 
 enum class OutputKeyType {
 	posterior,			// for writing posterior samples
+	dic,				// for saving dic at end of run
 	resumeData			// for saving the serialized state to resume later
 };
 

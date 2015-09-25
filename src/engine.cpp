@@ -230,8 +230,15 @@ void Metropolis::run_sampler(int n)
 		double DIC = devThetaBar + 2.0 * pd;
 		
 		// now just save it all
+		std::ostringstream dicOutput;
+		dicOutput << "pD: " << pd << "\n";
+		dicOutput << "Mean deviance (d-bar): " << DBar.first << "\n";
+		dicOutput << "Deviance of mean (d(theta-bar)): " << devThetaBar << "\n";
+		dicOutput << "DIC: " << DIC << "\n";
+		STMOutput::OutputBuffer buffer (dicOutput.str(), STMOutput::OutputKeyType::dic, 
+			posteriorOptions);
+		outputQueue->push(buffer);	
 	}
-	
 }
 
 
