@@ -116,6 +116,8 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
 	computeDIC = STMInput::str_convert<bool>(esd.at("computeDIC")[0]);
+	DBar = std::pair<double, int>(STMInput::str_convert<double>(esd.at("DBar")[0]), 
+			STMInput::str_convert<int>(esd.at("DBar")[1]));
 	if(upgrade)
 		currentLL = likelihood->compute_log_likelihood(parameters);
 	else
@@ -359,6 +361,7 @@ std::string Metropolis::serialize(char sep) const
 	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
 	result << "currentLL" << sep << currentLL << "\n";
 	result << "computeDIC" << sep << computeDIC << "\n";
+	result << "DBar" << sep << DBar.first << sep << DBar.second << "<\n";
 	
 	return result.str();
 }
