@@ -146,7 +146,7 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hsagr:p:t:o:n:i:b:l:c:v:")) != -1)
+	while((thearg = getopt(argc, argv, "hsagdr:p:t:o:n:i:b:l:c:v:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -164,6 +164,8 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 				s.prevMethod = STM::PrevalenceModelTypes::Global;
 				STMModel::STMTransition::set_prevalence_model(STM::PrevalenceModelTypes::Global);
 				break;
+			case 'd':
+				s.DIC = true;
 			case 'r':
 				s.resume = true;
 				s.resumeFile = optarg;
@@ -209,6 +211,7 @@ void print_help()
 	std::cerr << "    -s:             output to standard out (default is CSV files)\n";
 	std::cerr << "    -a:             Instead of the empirical prevalence (default), use the analytical solution\n";
 	std::cerr << "    -g:             Instead of the empirical prevalence (default), use global (i.e., no) prevalence\n";
+	std::cerr << "    -d:             Compute DIC (adds significant overhead)\n";
 	std::cerr << "    -r <filname>:   resume the sampler from the file indicated\n";
 	std::cerr << "                         note that the transitionData are not saved with the resume data\n";		
 	std::cerr << "                         so reloading it with the -t option is required\n";		
