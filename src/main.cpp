@@ -25,6 +25,7 @@ struct ModelSettings
 	int maxIterations;
 	bool resume;
 	const char * resumeFile;
+	bool DIC;
 	STM::PrevalenceModelTypes prevMethod;
 	
 	STMEngine::EngineOutputLevel verbose;
@@ -33,7 +34,7 @@ struct ModelSettings
 			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
 			burnin(0), targetInterval(1), numThreads(8), outDir("."), resume(false),
 			outMethod(STMOutput::OutputMethodType::CSV), resumeFile(""),
-			prevMethod(STM::PrevalenceModelTypes::Empirical) {}
+			prevMethod(STM::PrevalenceModelTypes::Empirical), DIC(false) {}
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -119,7 +120,7 @@ int main(int argc, char ** argv)
 		std::thread engineThread (&STMEngine::Metropolis::run_sampler, 
 				STMEngine::Metropolis(inits, outQueue, likelihood, settings.verbose, 
 				STMOutput::OutputOptions(settings.outDir, settings.outMethod), settings.thin, 
-				settings.burnin), settings.maxIterations);
+				settings.burnin, settings.DIC), settings.maxIterations);
 		std::cerr << "Engine started successfully\n";
 		std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 				STMOutput::OutputWorkerThread(outQueue, &engineFinished));

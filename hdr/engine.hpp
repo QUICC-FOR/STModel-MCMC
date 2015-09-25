@@ -36,7 +36,8 @@ class Metropolis
 			STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * 
 			const lhood, EngineOutputLevel outLevel = EngineOutputLevel::Normal, 
 			STMOutput::OutputOptions outOpt = STMOutput::OutputOptions(),
-			int thin = 1, int burnin = 0, bool rngSetSeed = false, int rngSeed = 0);
+			int thin = 1, int burnin = 0, bool rngSetSeed = false, int rngSeed = 0,
+			bool doDIC = false);
 	Metropolis(std::map<std::string, STMInput::SerializationData> & sd, 
 			STMLikelihood::Likelihood * const lhood, STMOutput::OutputQueue * const queue);
 //	Metropolis(const Metropolis & m);
@@ -47,7 +48,7 @@ class Metropolis
 	private:
 	// private functions
 	void auto_adapt();
-	std::map<std::string, double> do_sample(int n);
+	std::map<std::string, double> do_sample(int n, bool saveDeviance = false);
 	STM::ParPair propose_parameter(const 
 			STM::ParName & par) const;
 	int select_parameter(const STM::ParPair & p);
@@ -78,12 +79,14 @@ class Metropolis
 	int adaptationSampleSize;
 	int minAdaptationLoops;
 	int maxAdaptationLoops;
+	bool computeDIC;
 	bool rngSetSeed;
 	unsigned long int rngSeed;
 	EngineOutputLevel outputLevel;
 	STMOutput::OutputOptions posteriorOptions;
 	
 	// data that do not need to be saved in resumeData
+	std::vector<double> sampleDeviance;
 	std::vector<STM::ParMap> currentSamples;
 	bool saveResumeData;
 };

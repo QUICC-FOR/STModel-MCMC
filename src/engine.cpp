@@ -40,14 +40,14 @@ namespace STMEngine {
 Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood,
 		EngineOutputLevel outLevel, STMOutput::OutputOptions outOpt, int thin, int burnin, 
-		bool rngSetSeed, int rngSeed) :
+		bool rngSetSeed, int rngSeed, bool doDIC) :
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 
 // objects that we own or share
 parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), burnin(burnin),
 rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSize(thin),
-posteriorOptions(outOpt),
+posteriorOptions(outOpt), computeDIC(doDIC),
 
 // the parameters below have default values with no support for changing them
 minAdaptationLoops(5), maxAdaptationLoops(25), adaptationSampleSize(500), 
@@ -109,6 +109,7 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	rngSeed = STMInput::str_convert<unsigned long int>(esd.at("rngSeed")[0]);
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
+	computeDIC = STMInput::str_convert<bool>(esd.at("computeDIC")[0]);
 	if(upgrade)
 		currentLL = likelihood->compute_log_likelihood(parameters);
 	else
@@ -130,6 +131,7 @@ void Metropolis::run_sampler(int n)
 
 	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
+	bool computeDeviance = false;
 	while(numCompleted < n) {
 		int sampleSize;
 		if(burninCompleted < burnin)
@@ -141,9 +143,12 @@ void Metropolis::run_sampler(int n)
 		{
 			sampleSize = ((n - numCompleted < outputBufferSize) ? (n - numCompleted) : 
 					outputBufferSize);
+			computeDeviance = computeDIC;
 		}
 		currentSamples.reserve(sampleSize);
-		do_sample(sampleSize);
+		if(computeDIC)
+			sampleDeviance.reserve(sampleSize);
+		do_sample(sampleSize, computeDeviance);
 		
 		if(burninCompleted < burnin)
 		{
@@ -345,13 +350,14 @@ std::string Metropolis::serialize(char sep) const
 	result << "outputLevel" << sep << int(outputLevel) << "\n";
 	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
 	result << "currentLL" << sep << currentLL << "\n";
+	result << "computeDIC" << sep << computeDIC << "\n";
 	
 	return result.str();
 }
 
 
 
-std::map<STM::ParName, double> Metropolis::do_sample(int n)
+std::map<STM::ParName, double> Metropolis::do_sample(int n, bool saveDeviance)
 // n is the number of samples to take
 // returns a map of acceptance rates keyed by parameter name
 {
@@ -376,6 +382,8 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 		}
 		parameters.increment();
 		currentSamples.push_back(parameters.current_state());
+		if(saveDeviance)
+			sampleDeviance.push_back(-2 * currentLL);
 
 		//		if desired, some debugging output
 		if(outputLevel >= EngineOutputLevel::Verbose) {
