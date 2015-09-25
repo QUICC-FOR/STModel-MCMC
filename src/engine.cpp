@@ -28,6 +28,12 @@ namespace {
 	}
 
 	std::string engineVersion = "Metropolis1.3";
+	
+	
+	std::pair<double, int> weighted_mean(std::vector<std::pair<double, int> > x)
+	{
+	
+	}
 }
 
 namespace STMEngine {
@@ -156,6 +162,8 @@ void Metropolis::run_sampler(int n)
 		}
 		else
 		{
+			if(computeDIC)
+				prepare_deviance(); // this function takes care of clearing the old vector
 			STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
 					STMOutput::OutputKeyType::posterior, posteriorOptions);
 			outputQueue->push(buffer);	// note that this may block if the queue is busy
@@ -383,7 +391,7 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n, bool saveDeviance)
 		parameters.increment();
 		currentSamples.push_back(parameters.current_state());
 		if(saveDeviance)
-			sampleDeviance.push_back(-2 * currentLL);
+			sampleDeviance.push_back(std::pair<double, int>(-2 * currentLL, 1));
 
 		//		if desired, some debugging output
 		if(outputLevel >= EngineOutputLevel::Verbose) {
@@ -451,6 +459,14 @@ int Metropolis::select_parameter(const STM::ParPair & p)
 	} else {
 		return 0;
 	}
+}
+
+
+void Metropolis::prepare_deviance()
+{
+	sampleDeviance.push_back(DBar);
+	DBar = weighted_mean(sampleDeviance);
+	sampleDeviance.clear();
 }
 
 

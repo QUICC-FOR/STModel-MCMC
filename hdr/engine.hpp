@@ -58,6 +58,7 @@ class Metropolis
 	std::string serialize(char sep) const;
 	static std::string version();
 	void regression_adapt(int numSteps, int stepSize);
+	void prepare_deviance();
 
 	
 	// pointers to objects that the engine doesn't own, but that it uses
@@ -71,6 +72,7 @@ class Metropolis
 	std::shared_ptr<gsl_rng> rng;
 	double currentPosteriorProb;
 	double currentLL;
+	std::pair<double, int> DBar;	// the mean deviance along with the sample size
 
 	// settings
 	int outputBufferSize;
@@ -86,7 +88,7 @@ class Metropolis
 	STMOutput::OutputOptions posteriorOptions;
 	
 	// data that do not need to be saved in resumeData
-	std::vector<double> sampleDeviance;
+	std::vector<std::pair<double, int> > sampleDeviance;
 	std::vector<STM::ParMap> currentSamples;
 	bool saveResumeData;
 };
