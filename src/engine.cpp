@@ -27,7 +27,35 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis1.3";
+	std::string engineVersion = "Metropolis1.5";
+	
+	
+	std::pair<double, int> weighted_mean(const std::vector<std::pair<double, int> > &x)
+	{
+		long double sum = 0;
+		std::pair<double, int> result (0,0);
+		for(const auto & item : x)
+		{
+			sum += item.first * item.second;
+			result.second += item.second;
+		}
+		result.first = sum / result.second;
+		return result;
+	}
+	
+	std::pair<STM::ParMap, int> weighted_mean(const std::pair<STM::ParMap, int> &x, 
+			const std::pair<STM::ParMap, int> &y)
+	{
+		// will throw an exception from std::map if x has a key in it that is not in y
+		std::pair<STM::ParMap, int> result;
+		result.second = x.second + y.second;
+		for(const auto & p : x.first)
+		{
+			result.first[p.first] = ((x.first.at(p.first) * x.second) + 
+					(y.first.at(p.first) * y.second)) / result.second;
+		}
+		return result;
+	}
 }
 
 namespace STMEngine {
@@ -40,14 +68,14 @@ namespace STMEngine {
 Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood,
 		EngineOutputLevel outLevel, STMOutput::OutputOptions outOpt, int thin, int burnin, 
-		bool rngSetSeed, int rngSeed) :
+		bool rngSetSeed, int rngSeed, bool doDIC) :
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 
 // objects that we own or share
 parameters(inits), rngSetSeed(rngSetSeed), rngSeed(rngSeed), burnin(burnin),
 rng(gsl_rng_alloc(gsl_rng_mt19937), gsl_rng_free), outputLevel(outLevel), thinSize(thin),
-posteriorOptions(outOpt),
+posteriorOptions(outOpt), computeDIC(doDIC),
 
 // the parameters below have default values with no support for changing them
 minAdaptationLoops(5), maxAdaptationLoops(25), adaptationSampleSize(500), 
@@ -106,6 +134,15 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	rngSetSeed = STMInput::str_convert<bool>(esd.at("rngSetSeed")[0]);
 	outputLevel = EngineOutputLevel(STMInput::str_convert<int>(esd.at("outputLevel")[0]));
 	currentLL = STMInput::str_convert<double>(esd.at("currentLL")[0]);
+	computeDIC = STMInput::str_convert<bool>(esd.at("computeDIC")[0]);
+	DBar = std::pair<double, int>(STMInput::str_convert<double>(esd.at("DBar")[0]), 
+			STMInput::str_convert<int>(esd.at("DBar")[1]));
+	thetaBar.second = STMInput::str_convert<int>(esd.at("thetaBar_sampSize")[0]);
+	for(const auto & p : parameters.names())
+	{
+		std::string pkey = "thetaBar_" + p;
+		thetaBar.first[p] = STMInput::str_convert<double>(esd.at(pkey)[0]);
+	}
 
 }
 
@@ -125,6 +162,7 @@ void Metropolis::run_sampler(int n)
 	int numCompleted = 0;
 	// for safety, always start by re-computing the current likelihood
 	currentLL = likelihood->compute_log_likelihood(parameters);
+	bool computeDevianceNow = false;
 	while(numCompleted < n) {
 		int sampleSize;
 		if(burninCompleted < burnin)
@@ -136,9 +174,12 @@ void Metropolis::run_sampler(int n)
 		{
 			sampleSize = ((n - numCompleted < outputBufferSize) ? (n - numCompleted) : 
 					outputBufferSize);
+			computeDevianceNow = computeDIC;
 		}
 		currentSamples.reserve(sampleSize);
-		do_sample(sampleSize);
+		if(computeDevianceNow)
+			sampleDeviance.reserve(sampleSize);
+		do_sample(sampleSize, computeDevianceNow);
 		
 		if(burninCompleted < burnin)
 		{
@@ -146,6 +187,8 @@ void Metropolis::run_sampler(int n)
 		}
 		else
 		{
+			if(computeDIC)
+				prepare_deviance(); // this function takes care of clearing the old vector
 			STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
 					STMOutput::OutputKeyType::posterior, posteriorOptions);
 			outputQueue->push(buffer);	// note that this may block if the queue is busy
@@ -169,6 +212,27 @@ void Metropolis::run_sampler(int n)
 						<< n << std::endl;			
 			}
 		}
+	}
+	// end of sampling; compute DIC and output if needed
+	if(computeDIC)
+	{
+		STMParameters::STModelParameters tbarPars (parameters);
+		for(const auto & p : thetaBar.first)
+			tbarPars.update(p);
+		double devThetaBar = -2.0 * likelihood->compute_log_likelihood(tbarPars);
+
+		double pd = DBar.first - devThetaBar;
+		double DIC = devThetaBar + 2.0 * pd;
+		
+		// now just save it all
+		std::ostringstream dicOutput;
+		dicOutput << "pD: " << pd << "\n";
+		dicOutput << "Mean deviance (d-bar): " << DBar.first << "\n";
+		dicOutput << "Deviance of mean (d(theta-bar)): " << devThetaBar << "\n";
+		dicOutput << "DIC: " << DIC << "\n";
+		STMOutput::OutputBuffer buffer (dicOutput.str(), STMOutput::OutputKeyType::dic, 
+			posteriorOptions);
+		outputQueue->push(buffer);	
 	}
 }
 
@@ -340,13 +404,18 @@ std::string Metropolis::serialize(char sep) const
 	result << "outputLevel" << sep << int(outputLevel) << "\n";
 	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
 	result << "currentLL" << sep << currentLL << "\n";
+	result << "computeDIC" << sep << computeDIC << "\n";
+	result << "DBar" << sep << DBar.first << sep << DBar.second << "\n";
+	result << "thetaBar_sampSize" << sep << thetaBar.second << "\n";
+	for(const auto & theta : thetaBar.first)
+		result << "thetaBar_" << theta.first << sep << theta.second << "\n";
 	
 	return result.str();
 }
 
 
 
-std::map<STM::ParName, double> Metropolis::do_sample(int n)
+std::map<STM::ParName, double> Metropolis::do_sample(int n, bool saveDeviance)
 // n is the number of samples to take
 // returns a map of acceptance rates keyed by parameter name
 {
@@ -371,6 +440,8 @@ std::map<STM::ParName, double> Metropolis::do_sample(int n)
 		}
 		parameters.increment();
 		currentSamples.push_back(parameters.current_state());
+		if(saveDeviance)
+			sampleDeviance.push_back(std::pair<double, int>(-2 * currentLL, 1));
 
 		//		if desired, some debugging output
 		if(outputLevel >= EngineOutputLevel::Verbose) {
@@ -438,6 +509,31 @@ int Metropolis::select_parameter(const STM::ParPair & p)
 	} else {
 		return 0;
 	}
+}
+
+
+void Metropolis::prepare_deviance()
+{
+	sampleDeviance.push_back(DBar);
+	DBar = weighted_mean(sampleDeviance);
+	sampleDeviance.clear();
+	
+	
+	// compute the mean of the current parameter samples
+	std::pair<STM::ParMap, int> parMeans;
+	for(const auto & p : parameters.names())
+		parMeans.first[p] = parMeans.second = 0;
+		
+	for(const auto sample : currentSamples)
+	{
+		for(const auto & p : parameters.names())
+			parMeans.first.at(p) += sample.at(p);
+	}
+	parMeans.second = currentSamples.size();
+	for(const auto & p : parameters.names())
+		parMeans.first.at(p) /= parMeans.second;
+		
+	thetaBar = weighted_mean(thetaBar, parMeans);
 }
 
 
