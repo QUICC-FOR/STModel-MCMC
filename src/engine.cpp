@@ -34,6 +34,12 @@ namespace {
 	{
 	
 	}
+	
+	std::pair<STM::ParMap, int> weighted_mean(std::pair<STM::ParMap, int> x, 
+			std::pair<STM::ParMap, int> y)
+	{
+	
+	}
 }
 
 namespace STMEngine {
@@ -118,6 +124,12 @@ Metropolis::Metropolis(std::map<std::string, STMInput::SerializationData> & sd,
 	computeDIC = STMInput::str_convert<bool>(esd.at("computeDIC")[0]);
 	DBar = std::pair<double, int>(STMInput::str_convert<double>(esd.at("DBar")[0]), 
 			STMInput::str_convert<int>(esd.at("DBar")[1]));
+	thetaBar.second = STMInput::str_convert<int>(esd.at("thetaBar_sampSize")[0]);
+	for(const auto & p : parameters.names())
+	{
+		std::string pkey = "thetaBar_" + p;
+		thetaBar.first[p] = STMInput::str_convert<double>(esd.at(pkey)[0]);
+	}
 	if(upgrade)
 		currentLL = likelihood->compute_log_likelihood(parameters);
 	else
@@ -361,7 +373,10 @@ std::string Metropolis::serialize(char sep) const
 	result << "currentPosteriorProb" << sep << currentPosteriorProb << "\n";
 	result << "currentLL" << sep << currentLL << "\n";
 	result << "computeDIC" << sep << computeDIC << "\n";
-	result << "DBar" << sep << DBar.first << sep << DBar.second << "<\n";
+	result << "DBar" << sep << DBar.first << sep << DBar.second << "\n";
+	result << "thetaBar_sampSize" << sep << thetaBar.second << "\n";
+	for(const auto & theta : thetaBar.first)
+		result << "thetaBar_" << theta.first << sep << theta.second << "\n";
 	
 	return result.str();
 }
@@ -470,6 +485,23 @@ void Metropolis::prepare_deviance()
 	sampleDeviance.push_back(DBar);
 	DBar = weighted_mean(sampleDeviance);
 	sampleDeviance.clear();
+	
+	
+	// compute the mean of the current parameter samples
+	std::pair<STM::ParMap, int> parMeans;
+	for(const auto & p : parameters.names())
+		parMeans.first[p] = parMeans.second = 0;
+		
+	for(const auto sample : currentSamples)
+	{
+		for(const auto & p : parameters.names())
+			parMeans.first.at(p) += sample.at(p);
+	}
+	parMeans.second = currentSamples.size();
+	for(const auto & p : parameters.names())
+		parMeans.first.at(p) /= parMeans.second;
+		
+	thetaBar = weighted_mean(thetaBar, parMeans);
 }
 
 

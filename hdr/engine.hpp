@@ -72,7 +72,8 @@ class Metropolis
 	std::shared_ptr<gsl_rng> rng;
 	double currentPosteriorProb;
 	double currentLL;
-	std::pair<double, int> DBar;	// the mean deviance along with the sample size
+	std::pair<double, int> DBar;			// the mean deviance along with the sample size
+	std::pair<STM::ParMap, int> thetaBar;	// parameter means with sample size
 
 	// settings
 	int outputBufferSize;
