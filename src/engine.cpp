@@ -167,7 +167,7 @@ void Metropolis::run_sampler(int n)
 
 	int burninCompleted = parameters.iteration();
 	int numCompleted = 0;
-	bool computeDeviance = false;
+	bool computeDevianceNow = false;
 	while(numCompleted < n) {
 		int sampleSize;
 		if(burninCompleted < burnin)
@@ -179,12 +179,12 @@ void Metropolis::run_sampler(int n)
 		{
 			sampleSize = ((n - numCompleted < outputBufferSize) ? (n - numCompleted) : 
 					outputBufferSize);
-			computeDeviance = computeDIC;
+			computeDevianceNow = computeDIC;
 		}
 		currentSamples.reserve(sampleSize);
-		if(computeDIC)
+		if(computeDevianceNow)
 			sampleDeviance.reserve(sampleSize);
-		do_sample(sampleSize, computeDeviance);
+		do_sample(sampleSize, computeDevianceNow);
 		
 		if(burninCompleted < burnin)
 		{
@@ -218,6 +218,20 @@ void Metropolis::run_sampler(int n)
 			}
 		}
 	}
+	// end of sampling; compute DIC and output if needed
+	if(computeDIC)
+	{
+		STMParameters::STModelParameters tbarPars (parameters);
+		for(const auto & p : thetaBar.first)
+			tbarPars.update(p);
+		double devThetaBar = -2.0 * likelihood->compute_log_likelihood(tbarPars);
+
+		double pd = DBar.first - devThetaBar;
+		double DIC = devThetaBar + 2.0 * pd;
+		
+		// now just save it all
+	}
+	
 }
 
 
