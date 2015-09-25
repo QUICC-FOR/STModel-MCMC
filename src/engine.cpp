@@ -27,18 +27,34 @@ namespace {
 		return ts;		
 	}
 
-	std::string engineVersion = "Metropolis1.3";
+	std::string engineVersion = "Metropolis1.5";
 	
 	
-	std::pair<double, int> weighted_mean(std::vector<std::pair<double, int> > x)
+	std::pair<double, int> weighted_mean(const std::vector<std::pair<double, int> > &x)
 	{
-	
+		long double sum = 0;
+		std::pair<double, int> result (0,0);
+		for(const auto & item : x)
+		{
+			sum += item.first * item.second;
+			result.second += item.second;
+		}
+		result.first = sum / result.second;
+		return result;
 	}
 	
-	std::pair<STM::ParMap, int> weighted_mean(std::pair<STM::ParMap, int> x, 
-			std::pair<STM::ParMap, int> y)
+	std::pair<STM::ParMap, int> weighted_mean(const std::pair<STM::ParMap, int> &x, 
+			const std::pair<STM::ParMap, int> &y)
 	{
-	
+		// will throw an exception from std::map if x has a key in it that is not in y
+		std::pair<STM::ParMap, int> result;
+		result.second = x.second + y.second;
+		for(const auto & p : x.first)
+		{
+			result.first[p.first] = ((x.first.at(p.first) * x.second) + 
+					(y.first.at(p.first) * y.second)) / result.second;
+		}
+		return result;
 	}
 }
 
