@@ -33,8 +33,9 @@ struct ModelSettings
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
 			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
 			burnin(0), targetInterval(1), numThreads(8), outDir("."), resume(false),
-			outMethod(STMOutput::OutputMethodType::CSV), resumeFile(""),
-			prevMethod(STM::PrevalenceModelTypes::Empirical), DIC(false) {}
+			outMethod(STMOutput::OutputMethodType::CSV), resumeFile("resumeData.txt"),
+			prevMethod(STM::PrevalenceModelTypes::Empirical), DIC(false) 
+			{ }
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -66,10 +67,18 @@ int main(int argc, char ** argv)
 	
 	if(settings.resume)
 	{
-		STMInput::STMInputHelper inp (settings.resumeFile, STMInput::InputType::resume);
-		resumeData = inp.resume_data();
-		std::cerr << "Read resume data\n";
-		
+		try
+		{
+			STMInput::STMInputHelper inp (settings.resumeFile, STMInput::InputType::resume);
+			resumeData = inp.resume_data();
+			std::cerr << "Read resume data\n";
+		}
+		catch(std::runtime_error &e) 
+		{
+			std::cerr << "Failed to read resume data\n";
+			std::cerr << "  " << settings.resumeFile << "\n";
+			exit(1);
+		}
 		
 		likelihood = new STMLikelihood::Likelihood (resumeData.at("Likelihood"), 
 				resumeData.at("Parameters").at("parNames"), transitionData);
@@ -166,6 +175,7 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 				break;
 			case 'd':
 				s.DIC = true;
+				break;
 			case 'r':
 				s.resume = true;
 				s.resumeFile = optarg;
