@@ -78,6 +78,11 @@ class STMTransition
 	void set_global_prevalence();
 	static STM::PrevalenceModelTypes get_prevalence_model()	{ return prevalenceModel; }
 	static void set_prevalence_model(const STM::PrevalenceModelTypes &pr);
+	char get_state(char st)
+	{
+		if(st == 'i') return char(initial.get());
+		else return char(final.get());
+	}
 
 	private:
 	static void setup_transition_functions();
