@@ -68,7 +68,7 @@ namespace STMEngine {
 Metropolis::Metropolis(const std::vector<STMParameters::ParameterSettings> & inits, 
 		STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * const lhood,
 		EngineOutputLevel outLevel, STMOutput::OutputOptions outOpt, int thin, int burnin, 
-		bool rngSetSeed, int rngSeed, bool doDIC) :
+		bool doDIC, bool rngSetSeed, int rngSeed) :
 // objects that are not owned by the object
 outputQueue(queue), likelihood(lhood),
 

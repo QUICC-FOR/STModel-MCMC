@@ -36,8 +36,8 @@ class Metropolis
 			STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * 
 			const lhood, EngineOutputLevel outLevel = EngineOutputLevel::Normal, 
 			STMOutput::OutputOptions outOpt = STMOutput::OutputOptions(),
-			int thin = 1, int burnin = 0, bool rngSetSeed = false, int rngSeed = 0,
-			bool doDIC = false);
+			int thin = 1, int burnin = 0, bool doDIC = false, 
+			bool rngSetSeed = false, int rngSeed = 0);
 	Metropolis(std::map<std::string, STMInput::SerializationData> & sd, 
 			STMLikelihood::Likelihood * const lhood, STMOutput::OutputQueue * const queue);
 //	Metropolis(const Metropolis & m);
