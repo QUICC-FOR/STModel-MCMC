@@ -49,6 +49,7 @@ std::vector<char> State::state_names()
 }
 
 
+
 std::map<STM::StateTypes, std::map<STM::StateTypes, TransProbFunction> > STMTransition::transitionFunctions;
 
 /*

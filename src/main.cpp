@@ -25,6 +25,7 @@ struct ModelSettings
 	int maxIterations;
 	bool resume;
 	const char * resumeFile;
+	bool DIC;
 	STM::PrevalenceModelTypes prevMethod;
 	
 	STMEngine::EngineOutputLevel verbose;
@@ -32,8 +33,9 @@ struct ModelSettings
 	ModelSettings() : parFileName("inp/inits.txt"), transFileName("inp/trans.txt"),
 			maxIterations(100), verbose(STMEngine::EngineOutputLevel::Normal), thin(1), 
 			burnin(0), targetInterval(1), numThreads(8), outDir("."), resume(false),
-			outMethod(STMOutput::OutputMethodType::CSV), resumeFile(""),
-			prevMethod(STM::PrevalenceModelTypes::Empirical) {}
+			outMethod(STMOutput::OutputMethodType::CSV), resumeFile("resumeData.txt"),
+			prevMethod(STM::PrevalenceModelTypes::Empirical), DIC(false) 
+			{ }
 };
 
 void parse_args(int argc, char **argv, ModelSettings & s);
@@ -65,10 +67,18 @@ int main(int argc, char ** argv)
 	
 	if(settings.resume)
 	{
-		STMInput::STMInputHelper inp (settings.resumeFile, STMInput::InputType::resume);
-		resumeData = inp.resume_data();
-		std::cerr << "Read resume data\n";
-		
+		try
+		{
+			STMInput::STMInputHelper inp (settings.resumeFile, STMInput::InputType::resume);
+			resumeData = inp.resume_data();
+			std::cerr << "Read resume data\n";
+		}
+		catch(std::runtime_error &e) 
+		{
+			std::cerr << "Failed to read resume data\n";
+			std::cerr << "  " << settings.resumeFile << "\n";
+			exit(1);
+		}
 		
 		likelihood = new STMLikelihood::Likelihood (resumeData.at("Likelihood"), 
 				resumeData.at("Parameters").at("parNames"), transitionData);
@@ -119,7 +129,7 @@ int main(int argc, char ** argv)
 		std::thread engineThread (&STMEngine::Metropolis::run_sampler, 
 				STMEngine::Metropolis(inits, outQueue, likelihood, settings.verbose, 
 				STMOutput::OutputOptions(settings.outDir, settings.outMethod), settings.thin, 
-				settings.burnin), settings.maxIterations);
+				settings.burnin, settings.DIC), settings.maxIterations);
 		std::cerr << "Engine started successfully\n";
 		std::thread outputThread (&STMOutput::OutputWorkerThread::start,
 				STMOutput::OutputWorkerThread(outQueue, &engineFinished));
@@ -145,7 +155,7 @@ int main(int argc, char ** argv)
 void parse_args(int argc, char **argv, ModelSettings & s)
 {
 	int thearg;
-	while((thearg = getopt(argc, argv, "hsagr:p:t:o:n:i:b:l:c:v:")) != -1)
+	while((thearg = getopt(argc, argv, "hsagdr:p:t:o:n:i:b:l:c:v:")) != -1)
 	{
 		switch(thearg)
 		{
@@ -162,6 +172,9 @@ void parse_args(int argc, char **argv, ModelSettings & s)
 			case 'g':
 				s.prevMethod = STM::PrevalenceModelTypes::Global;
 				STMModel::STMTransition::set_prevalence_model(STM::PrevalenceModelTypes::Global);
+				break;
+			case 'd':
+				s.DIC = true;
 				break;
 			case 'r':
 				s.resume = true;
@@ -208,6 +221,7 @@ void print_help()
 	std::cerr << "    -s:             output to standard out (default is CSV files)\n";
 	std::cerr << "    -a:             Instead of the empirical prevalence (default), use the analytical solution\n";
 	std::cerr << "    -g:             Instead of the empirical prevalence (default), use global (i.e., no) prevalence\n";
+	std::cerr << "    -d:             Compute DIC (adds significant overhead)\n";
 	std::cerr << "    -r <filname>:   resume the sampler from the file indicated\n";
 	std::cerr << "                         note that the transitionData are not saved with the resume data\n";		
 	std::cerr << "                         so reloading it with the -t option is required\n";		

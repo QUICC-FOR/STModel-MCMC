@@ -13,6 +13,7 @@ std::vector<std::string> OutputBuffer::keys;
 std::map<OutputKeyType, bool> OutputBuffer::append = 
 {
 	{OutputKeyType::posterior, false},
+	{OutputKeyType::dic, false},
 	{OutputKeyType::resumeData, false}
 };
 
@@ -33,6 +34,9 @@ bool OutputOptions::allow_appends(OutputKeyType key)
 	{
 		case OutputKeyType::posterior:
 			r = true;
+			break;
+		case OutputKeyType::dic:
+			r = false;
 			break;
 		case OutputKeyType::resumeData:
 			r = false;
@@ -103,6 +107,9 @@ void OutputBuffer::buffer_setup()
 	{
 		case OutputKeyType::posterior:
 			filename += "posterior.csv";
+			break;
+		case OutputKeyType::dic:
+			filename += "dic.csv";
 			break;
 		case OutputKeyType::resumeData:
 			filename += "resumeData.txt";

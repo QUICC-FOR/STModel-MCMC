@@ -221,6 +221,7 @@ void STMInputHelper::read_inits(std::ifstream &file, char delim)
 {
 	std::vector<std::string> line;
 	while(get_next_line(file, line, delim)) {
+		if(line.empty()) continue;
 		std::string parname = line.at(initColIndices.at("name"));
 		STM::ParValue init = str_convert<STM::ParValue>(
 				line.at(initColIndices.at("initialValue")));

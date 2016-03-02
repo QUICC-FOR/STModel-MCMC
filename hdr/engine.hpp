@@ -36,7 +36,8 @@ class Metropolis
 			STMOutput::OutputQueue * const queue, STMLikelihood::Likelihood * 
 			const lhood, EngineOutputLevel outLevel = EngineOutputLevel::Normal, 
 			STMOutput::OutputOptions outOpt = STMOutput::OutputOptions(),
-			int thin = 1, int burnin = 0, bool rngSetSeed = false, int rngSeed = 0);
+			int thin = 1, int burnin = 0, bool doDIC = false, 
+			bool rngSetSeed = false, int rngSeed = 0);
 	Metropolis(std::map<std::string, STMInput::SerializationData> & sd, 
 			STMLikelihood::Likelihood * const lhood, STMOutput::OutputQueue * const queue);
 //	Metropolis(const Metropolis & m);
@@ -47,7 +48,7 @@ class Metropolis
 	private:
 	// private functions
 	void auto_adapt();
-	std::map<std::string, double> do_sample(int n);
+	std::map<std::string, double> do_sample(int n, bool saveDeviance = false);
 	STM::ParPair propose_parameter(const 
 			STM::ParName & par) const;
 	int select_parameter(const STM::ParPair & p);
@@ -57,6 +58,7 @@ class Metropolis
 	std::string serialize(char sep) const;
 	static std::string version();
 	void regression_adapt(int numSteps, int stepSize);
+	void prepare_deviance();
 
 	
 	// pointers to objects that the engine doesn't own, but that it uses
@@ -70,6 +72,8 @@ class Metropolis
 	std::shared_ptr<gsl_rng> rng;
 	double currentPosteriorProb;
 	double currentLL;
+	std::pair<double, int> DBar;			// the mean deviance along with the sample size
+	std::pair<STM::ParMap, int> thetaBar;	// parameter means with sample size
 
 	// settings
 	int outputBufferSize;
@@ -78,12 +82,14 @@ class Metropolis
 	int adaptationSampleSize;
 	int minAdaptationLoops;
 	int maxAdaptationLoops;
+	bool computeDIC;
 	bool rngSetSeed;
 	unsigned long int rngSeed;
 	EngineOutputLevel outputLevel;
 	STMOutput::OutputOptions posteriorOptions;
 	
 	// data that do not need to be saved in resumeData
+	std::vector<std::pair<double, int> > sampleDeviance;
 	std::vector<STM::ParMap> currentSamples;
 	bool saveResumeData;
 };

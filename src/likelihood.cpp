@@ -48,13 +48,13 @@ Likelihood::Likelihood(const std::vector<STMModel::STMTransition> & transitionDa
 		const std::map<std::string, PriorDist> & pr, unsigned int numThreads,
 		int parameterInterval) : transitions(transitionData), priors(pr), 
 		transitionFileName(transitionDataOriginFile), likelihoodThreads(numThreads), 
-		targetInterval(parameterInterval), checked(false)
+		targetInterval(parameterInterval)
 { }
 
 
 Likelihood::Likelihood(STMInput::SerializationData sd, const std::vector<std::string> &parNames,
 		const std::vector<STMModel::STMTransition> & transitionData) : 
-		transitions(transitionData), checked(false)
+		transitions(transitionData)
 {
 	transitionFileName = sd.at("transitionFileName")[0];
 	likelihoodThreads = STMInput::str_convert<int>(sd.at("likelihoodThreads")[0]);
@@ -77,23 +77,6 @@ Likelihood::Likelihood(STMInput::SerializationData sd, const std::vector<std::st
 	}
 }
 
-
-void Likelihood::self_check(const STMParameters::STModelParameters & params)
-{
-	for(int i = 0; i < transitions.size(); i++)
-	{
-		STMModel::STMTransition & dat = transitions.at(i);
-		double lik = dat.transition_prob(params.current_state(), targetInterval);
-		if(not std::isfinite(std::log(lik)))
-		{
-			std::cerr << "Warning: found infinite likelihood on initialization for ";
-			std::cerr << "transition data line " << i+2 << "\n";
-			std::cerr << "  This data point will be removed from likelihood calculations\n";
-			transitions.erase(transitions.begin() + i);
-		}
-	}
-	checked = true;
-}
 
 std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parNames) const
 {
@@ -132,7 +115,6 @@ std::string Likelihood::serialize(char s, const std::vector<STM::ParName> & parN
 
 double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters & params)
 {
-	if(not checked) self_check(params);
 	double sumlogl = 0;
 
 	omp_set_num_threads(likelihoodThreads);
@@ -141,7 +123,12 @@ double Likelihood::compute_log_likelihood(const STMParameters::STModelParameters
 		for(int i = 0; i < transitions.size(); i++)
 		{
 			STMModel::STMTransition & dat = transitions.at(i);
-			double lik = dat.transition_prob(params.current_state(), targetInterval);
+			long double lik = dat.transition_prob(params.current_state(), targetInterval);
+			// guard against infinite likelihoods
+			if(lik == 0)
+				lik = nextafter(0,1);
+			else if(lik == 1)
+				lik = nextafter(1,0);
 			sumlogl += std::log(lik);
 		} // ! for i
 	} // !parallel for

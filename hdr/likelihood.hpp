@@ -73,13 +73,11 @@ class Likelihood {
 	std::string serialize(char s, const std::vector<STM::ParName> & parNames) const;
 
 	private:
-	void self_check(const STMParameters::STModelParameters & params);
 	std::vector<STMModel::STMTransition> transitions;
 	std::map<std::string, PriorDist> priors;
 	unsigned int likelihoodThreads;
 	std::string transitionFileName;		// from where did the transition data originate?
 	unsigned int targetInterval;
-	bool checked;
 };
 
 } // !STMLikelihood namespace
