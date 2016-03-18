@@ -103,7 +103,6 @@ int main(int argc, char ** argv)
 	}
 
 	
-	
 	STMOutput::OutputQueue * outQueue = new STMOutput::OutputQueue;
 
 	// spawn engine and outputworker in threads
