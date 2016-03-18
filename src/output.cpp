@@ -49,7 +49,6 @@ bool OutputOptions::allow_appends(OutputKeyType key)
 std::string OutputOptions::serialize(char s) const
 {
 	std::ostringstream result;
-
 	result << "filename" << s << filename << "\n";
 	result << "posteriorStarted" << s << OutputBuffer::posterior_started() << "\n";
 	result << "dirname" << s << dirname << "\n";
