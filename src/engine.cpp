@@ -46,9 +46,25 @@ namespace {
 	std::pair<STM::ParMap, int> weighted_mean(const std::pair<STM::ParMap, int> &x, 
 			const std::pair<STM::ParMap, int> &y)
 	{
-		// will throw an exception from std::map if x has a key in it that is not in y
+		{	// error checking block
+			// will throw an exception if x has a key in it that is not in y or vice-versa
+			std::string msg = "";
+			for(const auto & p : x.first)
+			{
+				if(not y.first.count(p.first))
+					msg = msg + "Metropolis::weighted_mean: first input has key " + p.first + " which is missing in second\n";
+			}
+			for(const auto & p : y.first)
+			{
+				if(not x.first.count(p.first))
+					msg = msg + "Metropolis::weighted_mean: second input has key " + p.first + " which is missing in first\n";
+			}
+			if(msg != "")			
+				throw std::runtime_error(msg);
+		}
+		
 		std::pair<STM::ParMap, int> result;
-		result.second = x.second + y.second;
+		result.second = x.second + y.second;			
 		for(const auto & p : x.first)
 		{
 			result.first[p.first] = ((x.first.at(p.first) * x.second) + 
@@ -94,9 +110,13 @@ outputBufferSize(500)
 		saveResumeData = true;
 		
 	// compute the log likelihood for the initial conditions
-	
 	currentLL = likelihood->compute_log_likelihood(parameters);
 		
+	// initialize thetaBar with parameter names
+	thetaBar.second = 0;
+	for(auto p : parameters.names())
+		thetaBar.first[p] = 0;
+	
 	if(saveResumeData) serialize_all();
 }
 
@@ -189,6 +209,7 @@ void Metropolis::run_sampler(int n)
 		{
 			if(computeDIC)
 				prepare_deviance(); // this function takes care of clearing the old vector
+
 			STMOutput::OutputBuffer buffer (currentSamples, parameters.names(),
 					STMOutput::OutputKeyType::posterior, posteriorOptions);
 			outputQueue->push(buffer);	// note that this may block if the queue is busy
@@ -234,6 +255,9 @@ void Metropolis::run_sampler(int n)
 			posteriorOptions);
 		outputQueue->push(buffer);	
 	}
+	if(saveResumeData)
+		serialize_all();
+
 }
 
 
