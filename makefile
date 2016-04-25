@@ -1,12 +1,25 @@
 # matt's mac
 CC=/opt/local/bin/c++-mp-4.9
 GSL=-lgsl
-
-# mingan cluster
-#CC=c++
-#GSL=-Wl,-Bstatic -lgsl -lgslcblas -Wl,-Bdynamic
-
 CF=-std=c++11
+
+# mammouth cluster
+#CC=c++
+#GSL=-lgsl -lgslcblas
+
+# froggy
+# remember: must source the environment FROM THE INTERACTIVE SHELL (not in makefile)
+# must also load modules in shell
+# source /applis/ciment/v2/env.bash
+# module load ciment/devel_gcc-4.6.2
+# module load gcc/4.9.3_gcc-4.6.2
+# module load gsl/1.16_gcc-4.6.2
+
+# enable these to compile on froggy
+#CC=c++
+#GSL=-lgsl -lgslcblas
+#CF=$(CF) ${LDFLAGS} ${CFLAGS}
+
 
 # for compiling with openMP, use the first
 # otherwise, use the second
