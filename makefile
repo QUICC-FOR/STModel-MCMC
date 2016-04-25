@@ -6,6 +6,7 @@ CF=-std=c++11
 # mammouth cluster
 #CC=c++
 #GSL=-lgsl -lgslcblas
+#CF=-std=c++11
 
 # froggy
 # remember: must source the environment FROM THE INTERACTIVE SHELL (not in makefile)
@@ -18,7 +19,7 @@ CF=-std=c++11
 # enable these to compile on froggy
 #CC=c++
 #GSL=-lgsl -lgslcblas
-#CF=$(CF) ${LDFLAGS} ${CFLAGS}
+#CF=-std=c++11 ${LDFLAGS} ${CFLAGS}
 
 
 # for compiling with openMP, use the first
